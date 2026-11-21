@@ -1,4 +1,5 @@
-"""Dimensioned floor plan (same coordinates as build_scene.py). Output: docs/floor_plan.png + .pdf"""
+"""Dimensioned top-down floor plan, generated from the same coordinates as build_scene.py.
+Output: docs/floor_plan.png + docs/floor_plan.pdf (A3, mm)."""
 import os, math
 import matplotlib
 matplotlib.use("Agg")
@@ -6,128 +7,142 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Arc, Circle, Polygon
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "docs")
-os.makedirs(OUT, exist_ok=True)
+OUT = os.path.join(ROOT, "docs"); os.makedirs(OUT, exist_ok=True)
 plt.rcParams["font.family"] = "DejaVu Sans"
 
-fig, ax = plt.subplots(figsize=(16.5, 11.7))  # A3 landscape
-ax.set_aspect("equal"); ax.axis("off")
-ax.set_xlim(-1.6, 13.6); ax.set_ylim(-3.6, 8.2)
+# geometry (m) — identical to build_scene.py
+WT = 0.20; IX0, IX1, IY0, IY1 = 0.2, 11.8, 0.2, 5.8
+LAW = (0.20, 3.90); P1 = (3.90, 4.00); ADM = (4.00, 8.00); P2 = (8.00, 8.10); LANG = (8.10, 11.80)
+CDY = (0.35, 1.35); WINDOWS = [(0.70, 2.00), (2.10, 3.40), (8.60, 9.90), (10.00, 11.30)]
+ROWS_Y0 = (3.95, 2.75, 1.55); COLS = ((0.45, 1.65), (2.45, 3.65)); DESK_D = 0.5
 
-WALL = "#1d1f24"; FURN = "#8a7a64"; OAK = "#e6d3b3"; GLASS = "#5aa7d6"
+fig, ax = plt.subplots(figsize=(16.5, 11.7))
+ax.set_aspect("equal"); ax.axis("off"); ax.set_xlim(-1.7, 13.7); ax.set_ylim(-3.7, 8.5)
+WALL = "#1d1f24"; OAK = "#e6d3b3"; FURN = "#8a7a64"; GLASS = "#3d9ad6"; CIRC = "#1aa36b"
 
-def rect(x0, y0, x1, y1, fc="none", ec=FURN, lw=1, z=2, hatch=None, alpha=1):
-    ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=fc, ec=ec, lw=lw, zorder=z, hatch=hatch, alpha=alpha))
+def rect(x0, y0, x1, y1, fc="none", ec=FURN, lw=1, z=2, ls="-"):
+    ax.add_patch(Rectangle((x0, y0), x1 - x0, y1 - y0, fc=fc, ec=ec, lw=lw, zorder=z, ls=ls))
 
-def chair(x, y, rot):
-    a = math.radians(rot)
-    pts = [(-0.235, -0.235), (0.235, -0.235), (0.235, 0.235), (-0.235, 0.235)]
-    P = [(x + px * math.cos(a) - py * math.sin(a), y + px * math.sin(a) + py * math.cos(a)) for px, py in pts]
-    ax.add_patch(Polygon(P, closed=True, fc="#c9ccd2", ec="#5a5e66", lw=0.8, zorder=3))
-    bx = [(-0.235, 0.2), (0.235, 0.2), (0.235, 0.26), (-0.235, 0.26)]
-    B = [(x + px * math.cos(a) - py * math.sin(a), y + px * math.sin(a) + py * math.cos(a)) for px, py in bx]
-    ax.add_patch(Polygon(B, closed=True, fc="#5a5e66", ec="#5a5e66", lw=0.8, zorder=3))
+def chair(x, y, rz):
+    """rz as in build_scene: 0 faces -Y, 180 faces +Y, -90 faces -X, 90 faces +X."""
+    a = math.radians(rz)
+    def tr(pts): return [(x + px * math.cos(a) - py * math.sin(a), y + px * math.sin(a) + py * math.cos(a)) for px, py in pts]
+    ax.add_patch(Polygon(tr([(-0.235, -0.235), (0.235, -0.235), (0.235, 0.215), (-0.235, 0.215)]), fc="#c9ccd2", ec="#5a5e66", lw=0.7, zorder=3))
+    ax.add_patch(Polygon(tr([(-0.235, 0.19), (0.235, 0.19), (0.235, 0.26), (-0.235, 0.26)]), fc="#5a5e66", ec="#5a5e66", lw=0.7, zorder=3))
 
-def dim(x0, y0, x1, y1, txt, off=0.0, horiz=True, fs=10):
+def dim(p0, p1, txt, off, horiz=True, fs=9, col="#222"):
+    (x0, y0), (x1, y1) = p0, p1
     if horiz:
         y = y0 + off
-        ax.annotate("", (x0, y), (x1, y), arrowprops=dict(arrowstyle="<->", lw=0.9, color="#333"))
-        ax.plot([x0, x0], [y0, y], color="#777", lw=0.5); ax.plot([x1, x1], [y1, y], color="#777", lw=0.5)
-        ax.text((x0 + x1) / 2, y + 0.08, txt, ha="center", va="bottom", fontsize=fs)
+        ax.annotate("", (x0, y), (x1, y), arrowprops=dict(arrowstyle="<->", lw=0.8, color=col, shrinkA=0, shrinkB=0))
+        for xx, yy in ((x0, y0), (x1, y1)): ax.plot([xx, xx], [yy, y], color="#999", lw=0.4)
+        ax.text((x0 + x1) / 2, y + 0.06, txt, ha="center", va="bottom", fontsize=fs, color=col)
     else:
         x = x0 + off
-        ax.annotate("", (x, y0), (x, y1), arrowprops=dict(arrowstyle="<->", lw=0.9, color="#333"))
-        ax.plot([x0, x], [y0, y0], color="#777", lw=0.5); ax.plot([x1, x], [y1, y1], color="#777", lw=0.5)
-        ax.text(x - 0.1, (y0 + y1) / 2, txt, ha="right", va="center", fontsize=fs, rotation=90)
+        ax.annotate("", (x, y0), (x, y1), arrowprops=dict(arrowstyle="<->", lw=0.8, color=col, shrinkA=0, shrinkB=0))
+        for xx, yy in ((x0, y0), (x1, y1)): ax.plot([xx, x], [yy, yy], color="#999", lw=0.4)
+        ax.text(x - 0.07, (y0 + y1) / 2, txt, ha="right", va="center", fontsize=fs, rotation=90, color=col)
 
 # floors
-rect(0, 0, 3.94, 6, fc="#f3ece0", ec="none", z=0); rect(8.06, 0, 12, 6, fc="#f3ece0", ec="none", z=0)
-rect(3.94, 0, 8.06, 6, fc="#ecebe8", ec="none", z=0)
-# exterior walls (250 mm), with windows / storefront
-W = 0.25
-rect(-W, 6, 12 + W, 6 + W, fc=WALL, ec=WALL, z=5); rect(-W, -W, 0, 6, fc=WALL, ec=WALL, z=5); rect(12, -W, 12 + W, 6, fc=WALL, ec=WALL, z=5)
-for zx in (0, 8):
-    segs = [(zx, zx + 0.5), (zx + 1.9, zx + 2.1), (zx + 3.5, zx + 4)]
-    for a, b in segs: rect(a, -W, b, 0, fc=WALL, ec=WALL, z=5)
-    for a, b in [(zx + 0.5, zx + 1.9), (zx + 2.1, zx + 3.5)]:
-        rect(a, -W, b, 0, fc="white", ec=WALL, lw=0.8, z=5); ax.plot([a, b], [-0.14, -0.14], color=GLASS, lw=2, zorder=6)
-# storefront glass partition + door
-ax.plot([4.0, 5.40], [-0.12, -0.12], color=GLASS, lw=3, zorder=6); ax.plot([6.60, 8.0], [-0.12, -0.12], color=GLASS, lw=3, zorder=6)
-for a in (4.0, 5.40, 6.55, 7.94): rect(a, -0.16, a + 0.06, -0.08, fc=WALL, ec=WALL, z=6)
-ax.plot([5.45, 5.45], [-0.12, 0.98], color=GLASS, lw=2.5, zorder=6)
-ax.add_patch(Arc((5.45, -0.12), 2.2, 2.2, theta1=0, theta2=90, color=GLASS, lw=0.8, ls="--", zorder=6))
-# partitions (120 mm) with door openings
-for px in (4.0, 8.0):
-    rect(px - 0.06, 0, px + 0.06, 3.1, fc="#4a4d55", ec="#4a4d55", z=5); rect(px - 0.06, 4.1, px + 0.06, 6, fc="#4a4d55", ec="#4a4d55", z=5)
-ax.plot([3.92, 3.92], [4.12, 5.08], color=FURN, lw=2, zorder=6); ax.add_patch(Arc((3.92, 4.12), 1.92, 1.92, theta1=180, theta2=270, color=FURN, lw=0.8, ls="--"))
-ax.plot([8.08, 8.08], [4.12, 5.08], color=FURN, lw=2, zorder=6); ax.add_patch(Arc((8.08, 4.12), 1.92, 1.92, theta1=270, theta2=360, color=FURN, lw=0.8, ls="--"))
+rect(*LAW[:1], IY0, LAW[1], IY1, fc="#f3ece0", ec="none", z=0) if False else None
+rect(LAW[0], IY0, LAW[1], IY1, fc="#f3ece0", ec="none", z=0); rect(LANG[0], IY0, LANG[1], IY1, fc="#f3ece0", ec="none", z=0)
+rect(ADM[0], IY0, ADM[1], IY1, fc="#ecebe8", ec="none", z=0)
+# external walls
+rect(0, IY1, 12, 6, fc=WALL, ec=WALL, z=5); rect(0, 0, WT, IY1, fc=WALL, ec=WALL, z=5); rect(IX1, 0, 12, IY1, fc=WALL, ec=WALL, z=5)
+for (x0, x1, wins) in [(WT, 4.0, WINDOWS[:2]), (8.0, IX1, WINDOWS[2:])]:
+    edges = [x0] + [v for w in wins for v in w] + [x1]
+    for i in range(0, len(edges), 2): rect(edges[i], 0, edges[i + 1], WT, fc=WALL, ec=WALL, z=5)
+    for (a, b) in wins:
+        rect(a, 0, b, WT, fc="white", ec=WALL, lw=0.8, z=5); ax.plot([a, b], [0.1, 0.1], color=GLASS, lw=2, zorder=6)
+# storefront (glass partition) + central entrance door
+ax.plot([4.06, 5.40], [0.1, 0.1], color=GLASS, lw=3.2, zorder=6); ax.plot([6.60, 7.94], [0.1, 0.1], color=GLASS, lw=3.2, zorder=6)
+for a in (4.0, 5.40, 6.55, 7.94): rect(a, 0.06, a + 0.06 if a not in (5.40,) else 5.45, 0.14, fc=WALL, ec=WALL, z=6)
+ax.plot([5.45, 5.45], [0.1, 1.2], color=GLASS, lw=2.5, zorder=6)
+ax.add_patch(Arc((5.45, 0.1), 2.2, 2.2, theta1=0, theta2=90, color=GLASS, lw=0.8, ls="--", zorder=6))
+ax.plot([6.0, 6.0], [-0.35, 0.0], color="#d33", lw=0.8); ax.text(6.0, -0.42, "℄ entrance = ℄ facade (x = 6 000)", ha="center", va="top", fontsize=7.5, color="#d33")
+# partitions + classroom doors
+for (a, b) in (P1, P2):
+    rect(a, IY0, b, CDY[0], fc="#4a4d55", ec="#4a4d55", z=5); rect(a, CDY[1], b, IY1, fc="#4a4d55", ec="#4a4d55", z=5)
+ax.plot([3.86, 3.86], [CDY[1] + 0.02, CDY[1] + 0.98], color=FURN, lw=2.2, zorder=6)
+ax.add_patch(Arc((3.86, CDY[1]), 1.92, 1.92, theta1=180, theta2=270, color=FURN, lw=0.8, ls="--"))
+ax.plot([8.14, 8.14], [CDY[1] + 0.02, CDY[1] + 0.98], color=FURN, lw=2.2, zorder=6)
+ax.add_patch(Arc((8.14, CDY[1]), 1.92, 1.92, theta1=270, theta2=360, color=FURN, lw=0.8, ls="--"))
 
-# ---- Admin + coworking
-rect(4.06, 0.6, 4.70, 2.4, fc=OAK); rect(7.30, 0.6, 7.94, 2.4, fc=OAK)
-for y in (1.05, 1.95): chair(5.05, y, 90); chair(6.95, y, -90)
-rect(5.2, 2.8, 6.8, 3.6, fc=OAK)
-for x in (5.6, 6.4): chair(x, 2.42, 180); chair(x, 3.98, 0)
-rect(4.95, 2.05, 7.05, 4.35, fc="none", ec="#b0a89a", lw=0.8, z=1)
-rect(5.13, 4.55, 6.87, 5.32, fc="#f5f5f2", ec="#555", lw=1.2); rect(5.15, 4.58, 6.85, 4.66, fc=OAK, ec=FURN)
-ax.add_patch(Circle((6.0, 5.62), 0.3, fc="#2a2a2a", ec="#2a2a2a", zorder=3))
-rect(4.06, 4.3, 4.48, 5.5, fc=OAK); rect(4.06, 4.40, 4.11, 5.62, fc="#111", ec="#111", z=4)
-ax.add_patch(Circle((4.62, 5.6), 0.22, fc="white", ec="#3a7a3a", lw=1.5, zorder=3)); ax.add_patch(Circle((7.38, 5.6), 0.22, fc="white", ec="#3a7a3a", lw=1.5, zorder=3))
-rect(7.52, 4.46, 7.84, 4.78, fc="white", ec="#3a6ea5", lw=1.2); ax.add_patch(Circle((7.68, 4.62), 0.12, fc="#bcdcf2", ec="#3a6ea5", zorder=4))
-rect(4.06, 5.88, 7.94, 6.0, fc="#17233a", ec="#17233a", z=5)
-ax.plot([4.42, 7.58], [5.86, 5.86], color="#9fc2ff", lw=3, zorder=6)
-ax.annotate("", (6.0, 0.25), (6.0, 2.55), arrowprops=dict(arrowstyle="<-", lw=1.2, color="#2b7", ls="--"))
-ax.text(6.0, 1.6, "circulation\n1500", ha="center", fontsize=7.5, color="#2b7", rotation=90, va="center")
+# ---- ZONE 2 admin + coworking
+rect(4.0, 1.5, 4.6, 3.0, fc=OAK); rect(7.4, 1.5, 8.0, 3.0, fc=OAK)
+for y in (1.85, 2.62): chair(4.95, y, -90); chair(7.05, y, 90)
+rect(5.2, 3.35, 6.8, 4.05, fc=OAK)
+for x in (5.55, 6.0, 6.45): chair(x, 3.03, 180)
+rect(5.0, 2.6, 7.0, 4.3, ec="#b0a89a", lw=0.7, z=1, ls=":")
+rect(5.13, 4.48, 6.87, 5.2, fc="#f7f7f4", ec="#444", lw=1.2); rect(5.15, 4.515, 6.85, 4.59, fc=OAK, ec=FURN)
+ax.add_patch(Circle((6.0, 5.33), 0.28, fc="#2a2a2a", ec="#2a2a2a", zorder=3))
+rect(4.0, 4.0, 4.42, 5.2, fc=OAK); rect(4.0, 4.0, 4.05, 5.22, fc="#111", ec="#111", z=4)
+for (px, py) in [(4.68, 5.4), (7.38, 5.4)]: ax.add_patch(Circle((px, py), 0.22, fc="white", ec="#3a7a3a", lw=1.6, zorder=3))
+rect(7.52, 4.29, 7.84, 4.61, fc="white", ec="#3a6ea5", lw=1.2); ax.add_patch(Circle((7.68, 4.45), 0.12, fc="#bcdcf2", ec="#3a6ea5", zorder=4))
+rect(4.0, 5.675, 8.0, 5.8, fc="#17233a", ec="#17233a", z=5); ax.plot([4.42, 7.58], [5.66, 5.66], color="#9fc2ff", lw=3, zorder=6)
+# circulation
+ax.annotate("", (6.0, 0.35), (6.0, 2.6), arrowprops=dict(arrowstyle="<-", lw=1.3, color=CIRC, ls="--"))
+for sx in (4.6, 7.4):
+    ax.annotate("", (sx, 4.45), (6.0 + (sx - 6.0) * 0.55, 2.75), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--", connectionstyle="arc3,rad=0.15"))
+ax.annotate("", (3.6, 0.85), (5.4, 0.85), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--"))
+ax.annotate("", (8.4, 0.85), (6.6, 0.85), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--"))
+dim((5.2, 1.6), (6.8, 1.6), "aisle 1 600", 0, fs=7, col=CIRC)
+dim((4.0, 3.7), (5.2, 3.7), "1 200", 0, fs=7, col=CIRC); dim((6.8, 3.7), (8.0, 3.7), "1 200", 0, fs=7, col=CIRC)
 
 # ---- classrooms
 def classroom(mirror):
     X = (lambda x: 12 - x) if mirror else (lambda x: x)
     def R(x0, y0, x1, y1, **k):
         a, b = sorted((X(x0), X(x1))); rect(a, y0, b, y1, **k)
-    for rx0 in (1.45, 2.6):
-        for (y0, y1) in [(0.55, 2.15), (3.85, 5.45)]:
-            R(rx0, y0, rx0 + 0.55, y1, fc=OAK)
-            for k in range(3): chair(X(rx0 + 0.86), y0 + 0.27 + k * 0.53, 90 if mirror else -90)
-    R(0.35, 0.5, 1.05, 1.75, fc=OAK); chair(X(0.62), 1.12, -90 if mirror else 90)
-    R(0.0, 1.68, 0.05, 4.32, fc="white", ec="#333", lw=2)
-    R(0.0, 4.55, 0.07, 5.77, fc="#111", ec="#111")
-    R(3.0, 5.62, 3.85, 5.99, fc=OAK)
-    for cx in (1.35, 2.85): R(cx - 0.36, 5.93, cx + 0.36, 6.0, fc="#222", ec="#222", z=6)
+    for y0 in ROWS_Y0:
+        for (c0, c1) in COLS:
+            R(c0, y0, c1, y0 + DESK_D, fc=OAK)
+            for dx in (0.3, 0.9): chair(X(c0 + dx), y0 - 0.30, 180)
+    R(2.85, 4.8, 3.75, 5.3, fc=OAK); chair(X(3.3), 5.5, 0)
+    R(0.58, 5.74, 2.62, 5.8, fc="white", ec="#222", lw=2, z=6)
+    R(0.2, 4.0, 0.26, 5.22, fc="#111", ec="#111", z=6)
+    for cy_ in (2.0, 3.15): R(0.2, cy_ - 0.365, 0.25, cy_ + 0.365, fc="#333", ec="#333", z=6)
+    R(0.3, 0.21, 1.75, 0.52, fc=OAK)
+    ax.annotate("", (X(2.05), 0.78), (X(3.6), 0.85), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--"))
+    dm = lambda a, b, t, off, **k: dim((min(X(a), X(b)), 0) if False else (min(X(a), X(b)), k.pop("y", 0)), (max(X(a), X(b)), 0), t, off, **k)
 classroom(False); classroom(True)
+# classroom clearance dims (law; languages identical, mirrored)
+dim((1.65, 4.6), (2.45, 4.6), "aisle 800", 0, fs=7, col=CIRC)
+dim((3.2, 4.45), (3.2, 5.8), "1 350", 0, horiz=False, fs=7, col=CIRC)
+dim((3.2, 0.2), (3.2, 1.0), "800", 0, horiz=False, fs=7, col=CIRC)
+dim((0.3, 2.75), (0.3, 3.95), "pitch 1 200", 0, horiz=False, fs=7, col=CIRC)
 
-# labels
-def lab(x, y, t, s=12, w="bold", c="#1d1f24"): ax.text(x, y, t, ha="center", va="center", fontsize=s, fontweight=w, color=c, zorder=8)
-lab(2.0, 3.0, "ZONE 1\nHUQUQ VA TARIX\nLaw & History", 11)
-lab(10.0, 3.0, "ZONE 3\nXORIJIY TILLAR\nForeign Languages", 11)
-lab(6.0, 1.5, "", 1)
-ax.text(6.0, 6.55, "SIGNATURE WALL: illuminated logo,\nnavy acoustic slats, LED contours", ha="center", va="center", fontsize=7.5, color="#17233a")
-lab(6.0, 3.2, "COWORKING\n(central table)", 7.5, "normal")
-lab(4.38, 1.5, "cowork\ncounter", 7, "normal"); lab(7.62, 1.5, "cowork\ncounter", 7, "normal")
-lab(6.0, 4.94, "ADMINISTRATOR / RECEPTION", 6.5, "bold")
-lab(7.68, 4.2, "water\ncooler", 6.5, "normal"); lab(4.27, 4.0, "TV +\ncredenza", 6.5, "normal")
-lab(6.0, -0.55, "GLASS PARTITION + GLASS ENTRANCE DOOR (1100)", 8, "bold", "#2a6fa0")
-lab(6.0, 7.2, "ZONE 2 — ADMINISTRATION + COWORKING (one combined space)", 11)
-lab(1.3, 4.95, "TV", 7, "normal"); lab(0.35, 3.0, "WB", 7, "normal"); lab(10.7, 4.95, "TV", 7, "normal"); lab(11.65, 3.0, "WB", 7, "normal")
-ax.text(2.0, 5.7, "2 framed legal/history prints", ha="center", fontsize=6.5); ax.text(10.0, 5.7, "2 framed language prints", ha="center", fontsize=6.5)
+def lab(x, y, t, s=11, w="bold", c="#1d1f24", **k): ax.text(x, y, t, ha="center", va="center", fontsize=s, fontweight=w, color=c, zorder=9, **k)
+lab(2.05, 6.5, "LEFT — ZONE 1\nHUQUQ VA TARIX (Law & History)", 9.5)
+lab(6.0, 6.75, "CENTRE — ZONE 2\nADMINISTRATION + COWORKING\n(one combined space)", 9.5)
+lab(9.95, 6.5, "RIGHT — ZONE 3\nXORIJIY TILLAR (Foreign Languages)", 9.5)
+lab(6.0, 6.12, "illuminated signature wall", 7, "normal", "#17233a")
+lab(2.05, 5.95, "whiteboard (navy accent wall)", 6.5, "normal"); lab(9.95, 5.95, "whiteboard (teal accent wall)", 6.5, "normal")
+lab(6.0, 3.7, "COWORKING\ntable", 7, "normal"); lab(4.3, 2.25, "cowork\ncounter", 6.5, "normal", rotation=90); lab(7.7, 2.25, "cowork\ncounter", 6.5, "normal", rotation=90)
+lab(6.0, 4.84, "ADMINISTRATOR DESK", 6.5); lab(7.68, 4.05, "water cooler", 6, "normal"); lab(4.55, 4.6, "TV +\ncredenza", 6, "normal")
+lab(6.0, 1.15, "entry\nvestibule", 6.5, "normal", "#555")
+for (x, t) in [(0.45, "TV"), (12 - 0.45, "TV")]: lab(x, 4.6, t, 6.5, "normal", rotation=90)
+for (x, t) in [(0.45, "2 prints"), (12 - 0.45, "2 prints")]: lab(x, 2.58, t, 6.5, "normal", rotation=90)
+lab(2.05, -0.75, "", 1); lab(6.0, -0.85, "GLASS PARTITION + CENTRAL GLASS ENTRANCE DOOR 1 100", 8, "bold", "#2a6fa0")
 
-# dimensions
-dim(0, -W, 12, -W, "12 000", off=-2.35, fs=12)
-dim(0, -W, 4, -W, "4 000", off=-1.6); dim(4, -W, 8, -W, "4 000", off=-1.6); dim(8, -W, 12, -W, "4 000", off=-1.6)
-dim(4.0, -0.12, 5.45, -0.12, "1 450", off=-0.95, fs=8); dim(5.45, -0.12, 6.55, -0.12, "1 100", off=-0.95, fs=8); dim(6.55, -0.12, 8.0, -0.12, "1 450", off=-0.95, fs=8)
-dim(-W, 0, -W, 6, "6 000", off=-0.75, horiz=False, fs=12)
-dim(12.25, 3.1, 12.25, 4.1, "", off=0.0, horiz=False)
-ax.text(12.55, 3.6, "door\n1000", fontsize=7.5, va="center")
-dim(12 + W, 0, 12 + W, 3.1, "3 100", off=0.9, horiz=False, fs=8); dim(12 + W, 4.1, 12 + W, 6, "1 900", off=0.9, horiz=False, fs=8)
-for zx in (0, 8):
-    dim(zx + 0.5, 6.25, zx + 1.9, 6.25, "1 400 win", off=0.25, fs=7); dim(zx + 2.1, 6.25, zx + 3.5, 6.25, "1 400 win", off=0.25, fs=7) if False else None
+# dimension chains
+dim((0, 0), (12, 0), "12 000 (external)", -2.55, fs=11)
+for (a, b, t) in [(0, WT, "200"), (LAW[0], LAW[1], "3 700"), (P1[0], P1[1], "100"), (ADM[0], ADM[1], "4 000"), (P2[0], P2[1], "100"), (LANG[0], LANG[1], "3 700"), (IX1, 12, "200")]:
+    dim((a, 0), (b, 0), t, -1.85, fs=8 if len(t) < 4 else 9)
+dim((0, 0), (5.45, 0), "5 450", -1.25, fs=8); dim((5.45, 0), (6.55, 0), "1 100 door", -1.25, fs=8); dim((6.55, 0), (12, 0), "5 450", -1.25, fs=8)
+dim((0, 0), (0, 6), "6 000 (external)", -0.55, horiz=False, fs=11)
+dim((12, IY0), (12, IY1), "5 600 clear", 0.75, horiz=False, fs=8)
+dim((12, IY0), (12, CDY[0]), "", 0.35, horiz=False); dim((12, CDY[0]), (12, CDY[1]), "door 1 000", 0.35, horiz=False, fs=7)
+dim((12, CDY[1]), (12, IY1), "4 450", 0.35, horiz=False, fs=7)
 
-# north arrow + scale + title
-ax.annotate("N", xy=(13.1, 7.6), xytext=(13.1, 6.9), ha="center", fontsize=12, fontweight="bold", arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#111"))
-for i in range(5): rect(9.0 + i, -3.35, 10.0 + i, -3.25, fc="#111" if i % 2 == 0 else "white", ec="#111", lw=0.6, z=8)
-ax.text(9.0, -3.15, "0", fontsize=7); ax.text(14.0, -3.15, "5 m", fontsize=7, ha="right")
-ax.text(-1.5, 7.95, "HUQUQ MAKTABI — Floor Plan", fontsize=18, fontweight="bold")
-ax.text(-1.5, 7.55, "Building 12.0 × 6.0 m = 72 m²  ·  ceiling height 3.20 m  ·  dimensions in mm  ·  scale 1:50 @ A3", fontsize=10, color="#444")
-ax.text(-1.5, -3.3, "STREET / ENTRANCE PLAZA  ↓", fontsize=9, color="#666")
-ax.text(-1.5, -2.95, "Zone areas (interior, to partition centre-lines): Z1 24.0 m² · Z2 24.0 m² · Z3 24.0 m²", fontsize=8.5, color="#444")
+ax.annotate("N", xy=(13.2, 7.6), xytext=(13.2, 6.9), ha="center", fontsize=12, fontweight="bold", arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#111"))
+for i in range(5): rect(8.9 + i, -3.5, 9.9 + i, -3.4, fc="#111" if i % 2 == 0 else "white", ec="#111", lw=0.6, z=8)
+ax.text(8.9, -3.3, "0", fontsize=7); ax.text(13.9, -3.3, "5 m", fontsize=7, ha="right")
+ax.text(-1.6, 8.3, "HUQUQ MAKTABI — Floor Plan", fontsize=18, fontweight="bold")
+ax.text(-1.6, 7.92, "Footprint 12.0 × 6.0 m = 72 m² gross · external walls 200 · partitions 100 · ceiling 3 200 · dims in mm", fontsize=9.5, color="#444")
+ax.text(-1.6, -3.0, "Net areas: Law & History 3.70×5.60 = 20.7 m²  ·  Admin + Coworking 4.00×5.60 = 22.4 m²  ·  Foreign Languages 20.7 m²", fontsize=8.5, color="#444")
+ax.text(-1.6, -3.35, "Seats: 12 + 12 students, 2 teachers · 4 counter + 3 table coworking seats · administrator  ·  green = circulation", fontsize=8.5, color="#444")
+ax.text(-1.6, -0.6, "STREET ↓  (viewer outside\nfacing the entrance)", fontsize=8, color="#666")
 
 fig.savefig(os.path.join(OUT, "floor_plan.png"), dpi=200, bbox_inches="tight", facecolor="white")
 fig.savefig(os.path.join(OUT, "floor_plan.pdf"), bbox_inches="tight", facecolor="white")

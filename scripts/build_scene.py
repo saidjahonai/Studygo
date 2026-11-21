@@ -1,8 +1,10 @@
 """HUQUQ MAKTABI — procedural Blender scene (Blender 5.2, Cycles).
 
 Coordinate system (metres):
-  X = building length 0..12   (Zone1 Law 0-4 | Zone2 Admin+Coworking 4-8 | Zone3 Languages 8-12)
-  Y = building depth  0..6    (Y=0 is the street facade, exterior is Y<0)
+  X = building length 0..12 (outside faces of walls). Standing outside facing the entrance:
+      LEFT  Law & History  (clear x 0.20-3.90) | CENTRE Admin+Coworking (clear 4.00-8.00, entrance at x=6.0)
+      RIGHT Foreign Languages (clear 8.10-11.80). Partitions 100 mm, external walls 200 mm.
+  Y = building depth 0..6 (outside faces). Y=0 is the street facade, exterior is Y<0; interior 0.20-5.80
   Z = up                      (finished floor 0, ceiling 3.2)
 
 Run:  /opt/bvenv/bin/python scripts/build_scene.py   -> blender/huquq_maktabi.blend
@@ -338,125 +340,114 @@ def text_obj(name, coll, body, font, size, mat, loc, rot, extrude=0.004, align="
     ob.data.materials.append(mat); coll.objects.link(ob); return ob
 
 # ================================================================== ARCHITECTURE
+# Overall building footprint 12.0 x 6.0 m (72 m2 gross). External walls 200 mm,
+# partitions 100 mm. Clear widths are set from furniture + circulation, not equal thirds:
+#   Law & History 3.70 | partition 0.10 | Admin+Coworking 4.00 | partition 0.10 | Languages 3.70  (= 11.60 clear)
+WT = 0.20; TOP = 3.85
+IX0, IX1, IY0, IY1 = WT, 12 - WT, WT, 6 - WT          # interior 0.2..11.8 x 0.2..5.8
+LAW = (0.20, 3.90); P1 = (3.90, 4.00); ADM = (4.00, 8.00); P2 = (8.00, 8.10); LANG = (8.10, 11.80)
+CDY = (0.35, 1.35)                                    # classroom door openings (in partitions), 1000 mm
+Y_G = 0.10                                            # storefront glass line (centre of facade wall)
+WINDOWS = [(0.70, 2.00), (2.10, 3.40), (8.60, 9.90), (10.00, 11.30)]
+
 arch = Builder("Building_Shell", C_ARCH)
-WT = 0.25; TOP = 3.85
-# back wall (y 6..6.25) full length, end walls
-arch.box(-WT, 6.0, 0, 12 + WT, 6.0 + WT, TOP, M_FACADE)
-arch.box(-WT, -WT, 0, 0, 6.0, TOP, M_FACADE)
-arch.box(12, -WT, 0, 12 + WT, 6.0, TOP, M_FACADE)
-# front facade with windows (classrooms) and full glazing (admin)
-def facade_zone(x0, x1):
-    w1 = (x0 + 0.5, x0 + 1.9); w2 = (x0 + 2.1, x0 + 3.5)
-    arch.box(x0, -WT, 0, w1[0], 0, TOP, M_FACADE)
-    arch.box(w1[1], -WT, 0, w2[0], 0, TOP, M_FACADE)
-    arch.box(w2[1], -WT, 0, x1, 0, TOP, M_FACADE)
-    arch.box(w1[0], -WT, 0, w2[1], 0, 0.85, M_FACADE)
-    arch.box(w1[0], -WT, 2.75, w2[1], 0, TOP, M_FACADE)
-    return [w1, w2]
-WINDOWS = facade_zone(0, 4) + facade_zone(8, 12)
-arch.box(4, -WT, 3.2, 8, 0, TOP, M_FACADE)            # fascia over storefront
-# roof slab
-arch.box(0, 0, H, 12, 6, 3.6, M_FACADE)
+arch.box(0, IY1, 0, 12, 6, TOP, M_FACADE)                         # back wall
+arch.box(0, 0, 0, WT, IY1, TOP, M_FACADE)                         # left end wall
+arch.box(IX1, 0, 0, 12, IY1, TOP, M_FACADE)                       # right end wall
+# front facade: solid with classroom windows, storefront opening x 4.0..8.0
+def facade_run(x0, x1, wins):
+    edges = [x0] + [v for w in wins for v in w] + [x1]
+    for i in range(0, len(edges), 2):
+        arch.box(edges[i], 0, 0, edges[i + 1], WT, TOP, M_FACADE)
+    for (a, b) in wins:
+        arch.box(a, 0, 0, b, WT, 0.85, M_FACADE); arch.box(a, 0, 2.75, b, WT, TOP, M_FACADE)
+facade_run(WT, 4.0, WINDOWS[:2]); facade_run(8.0, IX1, WINDOWS[2:])
+arch.box(4.0, 0, H, 8.0, WT, TOP, M_FACADE)                       # fascia over storefront
+arch.box(IX0, IY0, H, IX1, IY1, 3.6, M_FACADE)                    # roof slab
 arch.build()
 
-# interior wall linings (paint) — separate so exterior stays anthracite
+# interior linings
 lin = Builder("Interior_Walls", C_ARCH)
 T_IN = 0.01
-lin.box(0, -0.0, 0, T_IN, 6, H, M_ACC_LAW)              # law end wall  (x=0) navy accent
-lin.box(12 - T_IN, 0, 0, 12, 6, H, M_ACC_LANG)            # lang end wall (x=12) teal accent
-lin.box(0, 6 - T_IN, 0, 4, 6, H, M_WALL)                 # back wall law
-lin.box(8, 6 - T_IN, 0, 12, 6, H, M_WALL)                # back wall lang
-for zx in (0, 8):                                        # front wall inner lining around windows
-    w1 = (zx + 0.5, zx + 1.9); w2 = (zx + 2.1, zx + 3.5)
-    lin.box(zx, 0, 0, w1[0], T_IN, H, M_WALL); lin.box(w1[1], 0, 0, w2[0], T_IN, H, M_WALL); lin.box(w2[1], 0, 0, zx + 4, T_IN, H, M_WALL)
-    lin.box(w1[0], 0, 0, w2[1], T_IN, 0.85, M_WALL); lin.box(w1[0], 0, 2.75, w2[1], T_IN, H, M_WALL)
-# partitions at x=4 and x=8 with door openings y 3.1..4.1 (h 2.2)
-for px in (4.0, 8.0):
-    a, b = px - 0.06, px + 0.06
-    lin.box(a, 0, 0, b, 3.1, H, M_WALL); lin.box(a, 4.1, 0, b, 6, H, M_WALL); lin.box(a, 3.1, 2.2, b, 4.1, H, M_WALL)
+lin.box(IX0, IY0, 0, IX0 + T_IN, IY1, H, M_WALL)                  # end walls
+lin.box(IX1 - T_IN, IY0, 0, IX1, IY1, H, M_WALL)
+lin.box(LAW[0], IY1 - T_IN, 0, LAW[1], IY1, H, M_ACC_LAW)         # classroom board walls (accent)
+lin.box(LANG[0], IY1 - T_IN, 0, LANG[1], IY1, H, M_ACC_LANG)
+for (x0, x1, wins) in [(LAW[0], LAW[1], WINDOWS[:2]), (LANG[0], LANG[1], WINDOWS[2:])]:
+    edges = [x0] + [v for w in wins for v in w] + [x1]
+    for i in range(0, len(edges), 2):
+        lin.box(edges[i], IY0, 0, edges[i + 1], IY0 + T_IN, H, M_WALL)
+    for (a, b) in wins:
+        lin.box(a, IY0, 0, b, IY0 + T_IN, 0.85, M_WALL); lin.box(a, IY0, 2.75, b, IY0 + T_IN, H, M_WALL)
+for (a, b) in (P1, P2):                                           # partitions with door openings
+    lin.box(a, IY0, 0, b, CDY[0], H, M_WALL); lin.box(a, CDY[1], 0, b, IY1, H, M_WALL); lin.box(a, CDY[0], 2.2, b, CDY[1], H, M_WALL)
 lin.build()
 
-# window reveals, sills, frames, glass (classrooms)
 win = Builder("Windows_Frames", C_ARCH)
 for (a, b) in WINDOWS:
-    win.box(a, -0.25, 0.85, b, 0.04, 0.88, M_WHITE_MET)               # inner sill
-    win.box(a - 0.01, -0.33, 0.83, b + 0.01, -0.25, 0.86, M_BLACK_AL)  # outer sill
-    win.box(a, -0.17, 0.88, b, -0.11, 0.93, M_BLACK_AL); win.box(a, -0.17, 2.70, b, -0.11, 2.75, M_BLACK_AL)
-    win.box(a, -0.17, 0.85, a + 0.05, -0.11, 2.75, M_BLACK_AL); win.box(b - 0.05, -0.17, 0.85, b, -0.11, 2.75, M_BLACK_AL)
-    m = (a + b) / 2; win.box(m - 0.025, -0.17, 0.85, m + 0.025, -0.11, 2.75, M_BLACK_AL)
-    win.box(a, -0.25, 0.85, a + 0.002, 0, 2.75, M_WALL); win.box(b - 0.002, -0.25, 0.85, b, 0, 2.75, M_WALL)
+    win.box(a, 0.0, 0.85, b, IY0 + 0.04, 0.88, M_WHITE_MET)
+    win.box(a - 0.01, -0.08, 0.83, b + 0.01, 0.0, 0.86, M_BLACK_AL)
+    for z0 in (0.88, 2.70): win.box(a, 0.07, z0, b, 0.13, z0 + 0.05, M_BLACK_AL)
+    for (u0, u1) in [(a, a + 0.05), (b - 0.05, b), ((a + b) / 2 - 0.025, (a + b) / 2 + 0.025)]:
+        win.box(u0, 0.07, 0.85, u1, 0.13, 2.75, M_BLACK_AL)
 win.build(bevel=0.003)
 gl = Builder("Window_Glass", C_ARCH)
-for (a, b) in WINDOWS:
-    gl.box(a + 0.03, -0.142, 0.9, b - 0.03, -0.138, 2.72, M_GLASS)
+for (a, b) in WINDOWS: gl.box(a + 0.03, 0.098, 0.9, b - 0.03, 0.102, 2.72, M_GLASS)
 gl.build()
 
-# ---- storefront: glass partition + separate glass entrance door (admin zone)
+# ---- storefront: glass partition + separate central glass entrance door (x 5.45..6.55)
 sf = Builder("Storefront_Frame", C_ARCH)
-Y_G = -0.12
 for (a, b) in [(4.0, 4.06), (5.40, 5.45), (6.55, 6.60), (7.94, 8.0)]:
     sf.box(a, Y_G - 0.04, 0, b, Y_G + 0.04, H, M_BLACK_AL)
-sf.box(4.0, Y_G - 0.04, H - 0.06, 8.0, Y_G + 0.04, H, M_BLACK_AL)          # head
-sf.box(4.0, Y_G - 0.04, 0, 5.45, Y_G + 0.04, 0.04, M_BLACK_AL)            # sills
-sf.box(6.55, Y_G - 0.04, 0, 8.0, Y_G + 0.04, 0.04, M_BLACK_AL)
-sf.box(5.40, Y_G - 0.04, 2.42, 6.60, Y_G + 0.04, 2.47, M_BLACK_AL)        # transom bar
+sf.box(4.0, Y_G - 0.04, H - 0.06, 8.0, Y_G + 0.04, H, M_BLACK_AL)
+sf.box(4.0, Y_G - 0.04, 0, 5.45, Y_G + 0.04, 0.04, M_BLACK_AL); sf.box(6.55, Y_G - 0.04, 0, 8.0, Y_G + 0.04, 0.04, M_BLACK_AL)
+sf.box(5.40, Y_G - 0.04, 2.42, 6.60, Y_G + 0.04, 2.47, M_BLACK_AL)
 sf.build(bevel=0.002)
 sg = Builder("Storefront_Glass", C_ARCH)
 sg.box(4.06, Y_G - 0.005, 0.04, 5.40, Y_G + 0.005, H - 0.06, M_GLASS)
 sg.box(6.60, Y_G - 0.005, 0.04, 7.94, Y_G + 0.005, H - 0.06, M_GLASS)
 sg.box(5.45, Y_G - 0.005, 2.47, 6.55, Y_G + 0.005, H - 0.06, M_GLASS)
 sg.build()
-# frosted manifestation band on glass (safety marking with logo-ish line)
 man = Builder("Glass_Manifestation", C_ARCH)
-man.box(4.06, Y_G - 0.007, 1.0, 5.40, Y_G - 0.006, 1.06, M_WHITE_MET)
-man.box(6.60, Y_G - 0.007, 1.0, 7.94, Y_G - 0.006, 1.06, M_WHITE_MET)
+man.box(4.06, Y_G - 0.007, 1.0, 5.40, Y_G - 0.006, 1.06, M_WHITE_MET); man.box(6.60, Y_G - 0.007, 1.0, 7.94, Y_G - 0.006, 1.06, M_WHITE_MET)
 man.build()
-
-# entrance door (pivot at hinge x=5.45, y=Y_G) — animated
 db = Builder("Entrance_Door_Leaf", C_ARCH)
 db.box(0.005, -0.006, 0.01, 1.095, 0.006, 2.415, M_GLASS)
-db.box(0.0, -0.02, 0.0, 1.10, 0.02, 0.06, M_BLACK_AL)       # bottom rail
-db.box(0.0, -0.02, 2.36, 1.10, 0.02, 2.42, M_BLACK_AL)      # top rail
-for sy in (-1, 1):                                           # pull handles both sides
+db.box(0.0, -0.02, 0.0, 1.10, 0.02, 0.06, M_BLACK_AL); db.box(0.0, -0.02, 2.36, 1.10, 0.02, 2.42, M_BLACK_AL)
+for sy in (-1, 1):
     db.cyl(0.98, sy * 0.075, 0.55, 1.75, 0.016, M_STEEL, n=16)
     db.box(0.97, min(0, sy * 0.075), 0.62, 0.99, max(0, sy * 0.075), 0.64, M_STEEL)
     db.box(0.97, min(0, sy * 0.075), 1.66, 0.99, max(0, sy * 0.075), 1.68, M_STEEL)
 DOOR = db.build(bevel=0.002)
 DOOR.location = (5.45, Y_G, 0)
-# door glass sign
 text_obj("Door_Sign", C_ARCH, "HUQUQ MAKTABI", FONT_SB, 0.05, M_WHITE_MET, (0.55, -0.007, 1.45), (math.radians(90), 0, 0), extrude=0.0005).parent = DOOR
 
-# classroom doors (oak frame, glass vision panel) — fixed open
-def class_door(px, open_dir):
-    fr = Builder(f"DoorFrame_x{px}", C_ARCH)
-    a, b = px - 0.075, px + 0.075
-    fr.box(a, 3.06, 0, b, 3.1, 2.24, M_OAK_Z); fr.box(a, 4.1, 0, b, 4.14, 2.24, M_OAK_Z); fr.box(a, 3.06, 2.2, b, 4.14, 2.24, M_OAK_X)
+# classroom doors: oak frame in partition, leaf open flat against the partition inside the classroom
+for (a, b, side) in [(P1[0], P1[1], -1), (P2[0], P2[1], 1)]:
+    fr = Builder(f"DoorFrame_x{a:.2f}", C_ARCH)
+    fr.box(a - 0.025, CDY[0] - 0.04, 0, b + 0.025, CDY[0], 2.24, M_OAK_Z)
+    fr.box(a - 0.025, CDY[1], 0, b + 0.025, CDY[1] + 0.04, 2.24, M_OAK_Z)
+    fr.box(a - 0.025, CDY[0] - 0.04, 2.2, b + 0.025, CDY[1] + 0.04, 2.24, M_OAK_X)
     fr.build(bevel=0.003)
-    lf = Builder(f"ClassDoor_x{px}", C_ARCH)
+    lf = Builder(f"ClassDoor_x{a:.2f}", C_ARCH)
     lf.box(0, -0.02, 0.005, 0.96, 0.02, 2.19, M_OAK_X)
-    lf.cyl(0.85, -0.05, 0.98, 1.02, 0.01, M_STEEL, n=12)
-    M = Matrix.Translation((px + open_dir * 0.02, 4.08, 0)) @ Matrix.Rotation(math.radians(-90 if open_dir < 0 else -90), 4, "Z")
+    lf.cyl(0.85, 0.05 * side, 0.98, 1.02, 0.01, M_STEEL, n=12)
     ob = lf.build(bevel=0.003)
-    ob.location = (px + open_dir * 0.03, 4.08, 0); ob.rotation_euler = (0, 0, math.radians(90 if open_dir < 0 else 90))
-    # rotate so the leaf lies flat against partition inside the classroom
-    ob.rotation_euler = (0, 0, math.radians(180 - 90 * open_dir * -1)) if False else ob.rotation_euler
-    return ob
-d1 = class_door(4.0, -1); d1.location = (3.895, 4.12, 0); d1.rotation_euler = (0, 0, math.radians(90))
-# leaf along -X from hinge at (3.92,4.08): lies inside law room perpendicular to partition
-d2 = class_door(8.0, 1); d2.location = (8.105, 4.12, 0); d2.rotation_euler = (0, 0, math.radians(90))
+    ob.location = ((a - 0.04) if side < 0 else (b + 0.04), CDY[1] + 0.02, 0); ob.rotation_euler = (0, 0, math.radians(90))
 
-# floors & ceiling
-fl = Builder("Floor_Admin", C_ARCH); fl.box(3.94, 0, -0.05, 8.06, 6, 0, M_FLOOR_ADMIN); fl.build()
-fc = Builder("Floor_Classrooms", C_ARCH); fc.box(0, 0, -0.05, 3.94, 6, 0, M_FLOOR_CLASS); fc.box(8.06, 0, -0.05, 12, 6, 0, M_FLOOR_CLASS); fc.build()
-fe = Builder("Floor_Entrance_Threshold", C_ARCH); fe.box(5.40, -0.25, -0.05, 6.60, 0, 0.005, M_STEEL); fe.build()
-ce = Builder("Ceiling", C_ARCH); ce.box(0, 0, H - 0.001, 12, 6, H, M_CEIL); ce.build()
+# floors, ceiling, skirting
+fl = Builder("Floor_Admin", C_ARCH); fl.box(3.95, IY0, -0.05, 8.05, IY1, 0, M_FLOOR_ADMIN); fl.box(5.40, 0, -0.05, 6.60, IY0, 0.0, M_FLOOR_ADMIN); fl.build()
+fc = Builder("Floor_Classrooms", C_ARCH); fc.box(IX0, IY0, -0.05, 3.95, IY1, 0, M_FLOOR_CLASS); fc.box(8.05, IY0, -0.05, IX1, IY1, 0, M_FLOOR_CLASS); fc.build()
+fe = Builder("Floor_Entrance_Threshold", C_ARCH); fe.box(5.40, 0, -0.05, 6.60, 0.2, 0.005, M_STEEL); fe.build()
+ce = Builder("Ceiling", C_ARCH); ce.box(IX0, IY0, H - 0.001, IX1, IY1, H, M_CEIL); ce.build()
 sk = Builder("Skirting", C_ARCH)
-for (x0, y0, x1, y1) in [(0.01, 5.975, 3.94, 5.99), (8.06, 5.975, 11.99, 5.99), (0.01, 0.01, 0.025, 5.99), (11.975, 0.01, 11.99, 5.99)]:
+for (x0, y0, x1, y1) in [(IX0, IY0, IX0 + 0.025, IY1), (IX1 - 0.025, IY0, IX1, IY1),
+                         (LAW[0], IY0, LAW[1], IY0 + 0.025), (LANG[0], IY0, LANG[1], IY0 + 0.025),
+                         (4.0, IY1 - 0.025, 8.0, IY1)]:
     sk.box(x0, y0, 0, x1, y1, 0.08, M_SKIRT)
-for px in (4.0, 8.0):
-    for side in (-1, 1):
-        x0 = px + side * 0.06; x1 = x0 + side * 0.012
-        sk.box(min(x0, x1), 0.01, 0, max(x0, x1), 3.06, 0.08, M_SKIRT); sk.box(min(x0, x1), 4.14, 0, max(x0, x1), 5.99, 0.08, M_SKIRT)
+for (a, b) in (P1, P2):
+    for (x0, x1) in [(a - 0.012, a), (b, b + 0.012)]:
+        sk.box(x0, IY0, 0, x1, CDY[0] - 0.04, 0.08, M_SKIRT); sk.box(x0, CDY[1] + 0.04, 0, x1, IY1, 0.08, M_SKIRT)
 sk.build()
 
 # ================================================================== FURNITURE LIBRARY
@@ -549,189 +540,165 @@ def plant(coll, name, x, y, pot_h=0.55, pot_r=0.22, height=1.25, leaves=110, mat
     ob = lb.build(smooth=True)
     return ob
 
-# ================================================================== ZONE 2 — ADMINISTRATION + COWORKING
+# ================================================================== ZONE 2 — ADMINISTRATION + COWORKING (x 4.0..8.0 clear)
+# Chair helper faces -Y at rz=0  ->  rz=-90 faces -X, rz=90 faces +X, rz=180 faces +Y.
+# Laptop helper: screen hinge on local +Y  ->  user faces +Y at rz=0, -X at rz=90, +X at rz=-90.
 adm = Builder("Admin_Furniture", C_ADMIN)
 cush = Builder("Admin_Upholstery", C_ADMIN)
-# left & right coworking counters (along partitions), y 0.6..2.4
-adm.box(4.06, 0.6, 0.72, 4.70, 2.4, 0.75, M_OAK_Y)
-adm.box(7.30, 0.6, 0.72, 7.94, 2.4, 0.75, M_OAK_Y)
-for (x0, x1) in [(4.06, 4.70), (7.30, 7.94)]:
-    for y in (0.62, 1.48, 2.36):
-        adm.box(x0 + 0.02, y - 0.0, 0, x1 - 0.04, y + 0.02, 0.72, M_WHITE_MET)
-    # power/USB rail
-    adm.box(x0 + (0.0 if x0 < 6 else 0.6), 0.6, 0.75, x0 + (0.03 if x0 < 6 else 0.64), 2.4, 0.83, M_PLASTIC_DK) if False else None
-# wall-mounted shelf above counters + pendant-free task lights (linear)
-adm.box(4.06, 0.7, 1.55, 4.36, 2.3, 1.575, M_OAK_Y); adm.box(7.64, 0.7, 1.55, 7.94, 2.3, 1.575, M_OAK_Y)
-books(adm, 4.2, 0.95, 1.575, 90, 3); books(adm, 7.8, 2.0, 1.575, 90, 4)
-# coworking chairs at counters
-for y in (1.05, 1.95):
-    chair(adm, cush, T(5.05, y, 0, 90 + random.uniform(-8, 8)), M_FABRIC_NAVY)      # faces -X (towards left counter)
-    chair(adm, cush, T(6.95, y, 0, -90 + random.uniform(-8, 8)), M_FABRIC_NAVY)
-laptop(adm, 4.42, 1.05, 90 + 180 - 180, 112); laptop(adm, 7.58, 1.95, -90, 108)
-mug(adm, 4.55, 1.5, 0.75); books(adm, 7.55, 1.1, 0.75, 15, 2)
-# branded acoustic felt panels above the counters (left & right walls)
-for (wx, face, txt) in [(4.06, 1, "COWORKING"), (7.94, -1, "BILIM  •  INTIZOM  •  ADOLAT")]:
+# entry vestibule y 0.2..1.45 kept clear (classroom doors left & right at y 0.35..1.35)
+# coworking counters along both partitions, y 1.5..3.0, depth 0.6
+for (x0, x1) in [(4.0, 4.6), (7.4, 8.0)]:
+    adm.box(x0, 1.5, 0.72, x1, 3.0, 0.75, M_OAK_Y)
+    for y in (1.52, 2.24, 2.96):
+        adm.box(x0 + 0.02, y - 0.02, 0, x1 - 0.04, y, 0.72, M_WHITE_MET)
+adm.box(4.0, 1.6, 1.55, 4.3, 2.9, 1.575, M_OAK_Y); adm.box(7.7, 1.6, 1.55, 8.0, 2.9, 1.575, M_OAK_Y)
+books(adm, 4.15, 1.85, 1.575, 90, 3); books(adm, 7.85, 2.65, 1.575, 90, 4)
+for (wx, face, txt) in [(4.0, 1, "COWORKING"), (8.0, -1, "BILIM  •  INTIZOM  •  ADOLAT")]:
     x0, x1 = (wx, wx + 0.035) if face > 0 else (wx - 0.035, wx)
-    adm.box(x0, 0.75, 1.78, x1, 2.25, 2.62, M_NAVY_FELT)
+    adm.box(x0, 1.6, 1.78, x1, 2.9, 2.62, M_NAVY_FELT)
     fx0, fx1 = (x1, x1 + 0.006) if face > 0 else (x0 - 0.006, x0)
-    adm.box(fx0, 0.74, 1.77, fx1, 2.26, 1.785, M_OAK_Y); adm.box(fx0, 0.74, 2.615, fx1, 2.26, 2.63, M_OAK_Y)
-    text_obj(f"Wall_Text_{txt[:4]}", C_ADMIN, txt, FONT_XB if face > 0 else FONT_SB, 0.15 if face > 0 else 0.085,
-             M_SPEC_TXT, ((x1 + 0.004) if face > 0 else (x0 - 0.004), 1.5, 2.2), (math.radians(90), 0, math.radians(90 if face > 0 else -90)), extrude=0.003)
-    adm.box(fx0, 1.1, 2.04, fx1 + (0.001 if face > 0 else -0.001), 1.9, 2.05, M_GOLD) if False else None
-# central coworking table directly ahead: 1.6 x 0.8, y 2.8..3.6
-desk(adm, 5.2, 2.8, 6.8, 3.6, M_OAK_X, M_BLACK_MET)
-for x in (5.6, 6.4):
-    chair(adm, cush, T(x, 2.42, 0, 180 + random.uniform(-6, 6)), M_FABRIC_OLIVE)    # front side, faces +Y
-    chair(adm, cush, T(x, 3.98, 0, random.uniform(-6, 6)), M_FABRIC_OLIVE)          # back side, faces -Y
-laptop(adm, 5.6, 3.05, 180, 105); laptop(adm, 6.4, 3.35, 0, 110)
-mug(adm, 6.0, 3.2, 0.75); books(adm, 5.95, 2.95, 0.75, 75, 3)
-# low pendant/power box on table
-adm.box(5.92, 3.12, 0.75, 6.08, 3.28, 0.79, M_PLASTIC_DK)
-# rug under central table
-rug = Builder("Rug", C_ADMIN); rug.box(4.95, 2.05, 0, 7.05, 4.35, 0.008, M_RUG); rug.build(bevel=0.004)
+    adm.box(fx0, 1.59, 1.77, fx1, 2.91, 1.785, M_OAK_Y); adm.box(fx0, 1.59, 2.615, fx1, 2.91, 2.63, M_OAK_Y)
+    text_obj(f"Wall_Text_{txt[:4]}", C_ADMIN, txt, FONT_XB if face > 0 else FONT_SB, 0.15 if face > 0 else 0.075,
+             M_SPEC_TXT, ((x1 + 0.004) if face > 0 else (x0 - 0.004), 2.25, 2.2),
+             (math.radians(90), 0, math.radians(90 if face > 0 else -90)), extrude=0.003)
+for y in (1.85, 2.62):
+    chair(adm, cush, T(4.95, y, 0, -90 + random.uniform(-8, 8)), M_FABRIC_NAVY)     # faces left counter
+    chair(adm, cush, T(7.05, y, 0, 90 + random.uniform(-8, 8)), M_FABRIC_NAVY)      # faces right counter
+laptop(adm, 4.3, 1.85, 90, 112); laptop(adm, 7.7, 2.62, -90, 108)
+mug(adm, 4.45, 2.3, 0.75); books(adm, 7.62, 1.8, 0.75, 15, 2)
+# central coworking table directly ahead of the entrance (1.6 x 0.7), seats face the signature wall
+desk(adm, 5.2, 3.35, 6.8, 4.05, M_OAK_X, M_BLACK_MET)
+for x in (5.55, 6.0, 6.45):
+    chair(adm, cush, T(x, 3.03, 0, 180 + random.uniform(-6, 6)), M_FABRIC_OLIVE)
+laptop(adm, 5.55, 3.62, 0, 108); laptop(adm, 6.45, 3.6, 4, 110)
+mug(adm, 6.12, 3.75, 0.75); books(adm, 5.95, 3.85, 0.75, 80, 3)
+adm.box(5.94, 3.9, 0.75, 6.06, 4.0, 0.785, M_PLASTIC_DK)
+rug = Builder("Rug", C_ADMIN); rug.box(5.0, 2.6, 0, 7.0, 4.3, 0.008, M_RUG); rug.build(bevel=0.004)
 
-# reception / administrator desk (y 4.6..5.3)
+# administrator / reception desk at the back (front face y 4.55)
 RX0, RX1 = 5.15, 6.85
-adm.box(RX0, 4.62, 0, RX1, 4.66, 1.05, M_OAK_Z)                       # front panel (oak, vertical grain)
-for i in range(18):                                                   # fluted oak slats on front
+adm.box(RX0, 4.55, 0, RX1, 4.59, 1.05, M_OAK_Z)
+for i in range(18):
     x = RX0 + 0.04 + i * (RX1 - RX0 - 0.08) / 17
-    adm.box(x - 0.018, 4.585, 0.06, x + 0.018, 4.62, 1.03, M_OAK_Z)
-adm.box(RX0 - 0.02, 4.55, 1.05, RX1 + 0.02, 4.82, 1.08, M_WHITE_GLOSS)  # raised transaction top
-adm.box(RX0, 4.62, 0.72, RX1, 5.32, 0.75, M_WHITE_GLOSS)               # work surface
-adm.box(RX0, 4.66, 0, RX0 + 0.04, 5.32, 0.72, M_GRAPHITE); adm.box(RX1 - 0.04, 4.66, 0, RX1, 5.32, 0.72, M_GRAPHITE)
-adm.box(RX1 - 0.46, 4.9, 0, RX1 - 0.04, 5.3, 0.6, M_GRAPHITE)           # pedestal drawers
-adm.box(RX0 + 0.02, 4.56, 0.0, RX1 - 0.02, 4.585, 0.025, M_GRAPHITE)    # plinth
-# monitor, keyboard, phone, documents
-adm.box(6.25, 4.98, 0.75, 6.43, 5.12, 0.76, M_STEEL); adm.box(6.325, 5.06, 0.76, 6.355, 5.08, 1.0, M_STEEL)
-MON = Matrix.Translation((6.34, 5.05, 1.12)) @ Matrix.Rotation(math.radians(-8), 4, "Z")
+    adm.box(x - 0.018, 4.515, 0.06, x + 0.018, 4.55, 1.03, M_OAK_Z)
+adm.box(RX0 - 0.02, 4.48, 1.05, RX1 + 0.02, 4.75, 1.08, M_WHITE_GLOSS)
+adm.box(RX0, 4.55, 0.72, RX1, 5.2, 0.75, M_WHITE_GLOSS)
+adm.box(RX0, 4.59, 0, RX0 + 0.04, 5.2, 0.72, M_GRAPHITE); adm.box(RX1 - 0.04, 4.59, 0, RX1, 5.2, 0.72, M_GRAPHITE)
+adm.box(RX1 - 0.46, 4.8, 0, RX1 - 0.04, 5.18, 0.6, M_GRAPHITE)
+adm.box(RX0 + 0.02, 4.49, 0.0, RX1 - 0.02, 4.515, 0.025, M_GRAPHITE)
+adm.box(6.25, 4.88, 0.75, 6.43, 5.02, 0.76, M_STEEL); adm.box(6.325, 4.96, 0.76, 6.355, 4.98, 1.0, M_STEEL)
+MON = Matrix.Translation((6.34, 4.95, 1.12)) @ Matrix.Rotation(math.radians(-8), 4, "Z")
 adm.box(-0.31, -0.012, -0.19, 0.31, 0.012, 0.19, M_PLASTIC_DK, M=MON)
 adm.box(-0.30, -0.0135, -0.18, 0.30, -0.012, 0.18, M_SCREEN_OFF, M=MON)
-adm.box(6.12, 4.78, 0.75, 6.52, 4.92, 0.765, M_WHITE_MET)
-adm.box(5.45, 4.85, 0.75, 5.66, 5.15, 0.756, M_PAPER); books(adm, 5.42, 5.12, 0.75, 10, 2)
-# executive chair
-ex = T(6.0, 5.62, 0, 180 - 12)
+adm.box(6.12, 4.76, 0.75, 6.52, 4.88, 0.765, M_WHITE_MET)
+adm.box(5.45, 4.8, 0.75, 5.66, 5.1, 0.756, M_PAPER); books(adm, 5.42, 5.05, 0.75, 10, 2)
+ex = T(6.0, 5.33, 0, 12)                                            # executive chair, faces -Y (visitors)
 for k in range(5):
-    a = math.radians(72 * k)
-    Mk = ex @ Matrix.Rotation(a, 4, "Z")
-    adm.box(-0.02, 0, 0.05, 0.02, 0.33, 0.08, M_BLACK_MET, M=Mk); adm.cyl(0, 0.31, 0.0, 0.05, 0.025, M_PLASTIC_DK, n=10, M=Mk)
+    Mk = ex @ Matrix.Rotation(math.radians(72 * k), 4, "Z")
+    adm.box(-0.02, 0, 0.05, 0.02, 0.3, 0.08, M_BLACK_MET, M=Mk); adm.cyl(0, 0.28, 0.0, 0.05, 0.025, M_PLASTIC_DK, n=10, M=Mk)
 adm.cyl(0, 0, 0.08, 0.42, 0.025, M_STEEL, n=16, M=ex)
-cush.box(-0.26, -0.25, 0.42, 0.26, 0.24, 0.52, M_LEATHER, M=ex)
-eb = ex @ Matrix.Translation((0, 0.26, 0.55)) @ Matrix.Rotation(math.radians(-10), 4, "X")
-cush.box(-0.25, -0.05, 0.0, 0.25, 0.04, 0.62, M_LEATHER, M=eb)
+cush.box(-0.26, -0.25, 0.42, 0.26, 0.22, 0.52, M_LEATHER, M=ex)
+eb = ex @ Matrix.Translation((0, 0.22, 0.55)) @ Matrix.Rotation(math.radians(-10), 4, "X")
+cush.box(-0.25, -0.04, 0.0, 0.25, 0.04, 0.62, M_LEATHER, M=eb)
 for sx in (-1, 1):
     adm.box(sx * 0.27 - 0.02, -0.15, 0.52, sx * 0.27 + 0.02, 0.15, 0.66, M_BLACK_MET, M=ex)
-# visitor chairs flanking the transaction counter? (kept clear for circulation)
 
-# water cooler (right side, near partition)
-WC = (7.68, 4.62)
+# water cooler (right corridor)
+WC = (7.68, 4.45)
 adm.box(WC[0] - 0.16, WC[1] - 0.16, 0, WC[0] + 0.16, WC[1] + 0.16, 1.0, M_WHITE_GLOSS)
-adm.box(WC[0] - 0.165, WC[1] - 0.17, 0.62, WC[0] + 0.165, WC[1] - 0.07, 0.86, M_PLASTIC_DK)    # dispensing recess (faces -Y)
+adm.box(WC[0] - 0.165, WC[1] - 0.17, 0.62, WC[0] + 0.165, WC[1] - 0.07, 0.86, M_PLASTIC_DK)
 adm.box(WC[0] - 0.08, WC[1] - 0.18, 0.66, WC[0] + 0.08, WC[1] - 0.10, 0.68, M_STEEL)
-adm.cyl(WC[0] - 0.05, WC[1] - 0.135, 0.80, 0.84, 0.012, M_STEEL, n=10); adm.cyl(WC[0] + 0.05, WC[1] - 0.135, 0.80, 0.84, 0.012, (M_LED_COOL), n=10)
+adm.cyl(WC[0] - 0.05, WC[1] - 0.135, 0.80, 0.84, 0.012, M_STEEL, n=10); adm.cyl(WC[0] + 0.05, WC[1] - 0.135, 0.80, 0.84, 0.012, M_LED_COOL, n=10)
 adm.cyl(WC[0], WC[1], 1.0, 1.04, 0.07, M_WHITE_GLOSS, n=24)
 bt = Builder("WaterCooler_Bottle", C_ADMIN)
 bt.cyl(WC[0], WC[1], 1.04, 1.1, 0.05, M_GLASS_BOTTLE, r1=0.13, n=32)
 bt.cyl(WC[0], WC[1], 1.1, 1.46, 0.135, M_GLASS_BOTTLE, n=32)
 bt.cyl(WC[0], WC[1], 1.46, 1.5, 0.135, M_GLASS_BOTTLE, r1=0.08, n=32)
 bt.build(bevel=0.01, segs=2, smooth=True)
-adm.cyl(WC[0] + 0.24, WC[1], 0.0, 0.5, 0.05, M_WHITE_MET, n=16)  # cup bin
-
-# credenza + TV on left partition (facing +X)
-adm.box(4.06, 4.3, 0.08, 4.48, 5.5, 0.55, M_OAK_Y); adm.box(4.08, 4.32, 0, 4.44, 5.48, 0.08, M_GRAPHITE)
-books(adm, 4.27, 5.2, 0.55, 90, 3)
-adm.box(4.06, 4.40, 1.18, 4.11, 5.62, 1.88, M_PLASTIC_DK)   # TV body
-TVA = wall_plane("TV_Admin_Screen", C_ADMIN, "X", 4.112, 4.415, 5.605, 1.195, 1.865, M_TV, facing=1)
+adm.cyl(WC[0], WC[1] + 0.3, 0.0, 0.5, 0.05, M_WHITE_MET, n=16)
+# credenza + TV on the left partition (facing +X)
+adm.box(4.0, 4.0, 0.08, 4.42, 5.2, 0.55, M_OAK_Y); adm.box(4.02, 4.02, 0, 4.38, 5.18, 0.08, M_GRAPHITE)
+books(adm, 4.21, 4.9, 0.55, 90, 3)
+adm.box(4.0, 4.0, 1.18, 4.05, 5.22, 1.88, M_PLASTIC_DK)
+wall_plane("TV_Admin_Screen", C_ADMIN, "X", 4.052, 4.015, 5.205, 1.195, 1.865, M_TV, facing=1)
+text_obj("Plate_Law", C_ADMIN, "HUQUQ VA TARIX", FONT_SB, 0.06, M_GRAPHITE, (4.006, 0.85, 2.38), (math.radians(90), 0, math.radians(90)), extrude=0.002)
+text_obj("Plate_Lang", C_ADMIN, "XORIJIY TILLAR", FONT_SB, 0.06, M_GRAPHITE, (7.994, 0.85, 2.38), (math.radians(90), 0, math.radians(-90)), extrude=0.002)
 adm.build(bevel=0.003)
 cush.build(bevel=0.022, segs=3, smooth=True)
+plant(C_ADMIN, "Plant_Left", 4.68, 5.4, pot_h=0.6, pot_r=0.22, height=1.15, leaves=130, mat=M_PLANT_DK)
+plant(C_ADMIN, "Plant_Right", 7.38, 5.4, pot_h=0.6, pot_r=0.22, height=0.95, leaves=34, mat=M_PLANT_LT, big_leaf=True)
 
-plant(C_ADMIN, "Plant_Left", 4.62, 5.6, pot_h=0.6, pot_r=0.22, height=1.15, leaves=130, mat=M_PLANT_DK)
-plant(C_ADMIN, "Plant_Right", 7.38, 5.6, pot_h=0.6, pot_r=0.22, height=0.95, leaves=34, mat=M_PLANT_LT, big_leaf=True)
-plant(C_ADMIN, "Plant_Counter", 7.75, 0.75, pot_h=0.0, pot_r=0.001, height=0.0, leaves=0) if False else None
-
-# ---- signature wall (behind administrator desk, y = 6)
+# ---- signature wall (back wall of the admin zone, y = 5.8)
 sig = Builder("Signature_Wall_Slats", C_ADMIN)
-sig.box(4.06, 5.97, 0, 7.94, 5.99, H, M_NAVY_FELT)                     # felt backing
-x = 4.08
-while x < 7.92:
-    # leave the logo field clear
-    sig.box(x, 5.925, 0.08, x + 0.032, 5.97, H - 0.06, M_NAVY)
-    x += 0.058
+sig.box(4.0, 5.77, 0, 8.0, 5.79, H, M_NAVY_FELT)
+x = 4.02
+while x < 7.96:
+    sig.box(x, 5.725, 0.08, x + 0.032, 5.77, H - 0.06, M_NAVY); x += 0.058
 sig.build(bevel=0.002)
-pan = Builder("Signature_Logo_Panel", C_ADMIN)
-pan.box(4.42, 5.875, 1.55, 7.58, 5.925, 2.80, M_GRAPHITE)
-pan.build(bevel=0.004)
+pan = Builder("Signature_Logo_Panel", C_ADMIN); pan.box(4.42, 5.675, 1.55, 7.58, 5.725, 2.80, M_GRAPHITE); pan.build(bevel=0.004)
 led = Builder("Signature_LED_Contours", C_ADMIN)
-# contour frame inset around logo panel
-pan_led = [(4.40, 5.90, 1.53, 7.60, 5.92, 1.545), (4.40, 5.90, 2.805, 7.60, 5.92, 2.82),
-           (4.40, 5.90, 1.53, 4.415, 5.92, 2.82), (7.585, 5.90, 1.53, 7.60, 5.92, 2.82)]
-for bx in pan_led: led.box(*bx, M_LED_COOL)
-for xx in (4.22, 7.78):                                                 # vertical podcast-style LED lines
-    led.box(xx - 0.006, 5.915, 0.12, xx + 0.006, 5.93, H - 0.12, M_LED_COOL)
-led.box(4.06, 5.90, 0.0, 7.94, 5.93, 0.015, M_LED_WARM)                 # floor grazer
+for bx in [(4.40, 5.70, 1.53, 7.60, 5.72, 1.545), (4.40, 5.70, 2.805, 7.60, 5.72, 2.82),
+           (4.40, 5.70, 1.53, 4.415, 5.72, 2.82), (7.585, 5.70, 1.53, 7.60, 5.72, 2.82)]:
+    led.box(*bx, M_LED_COOL)
+for xx in (4.22, 7.78): led.box(xx - 0.006, 5.715, 0.12, xx + 0.006, 5.73, H - 0.12, M_LED_COOL)
+led.box(4.0, 5.70, 0.0, 8.0, 5.73, 0.015, M_LED_WARM)
 led.build()
-logo = text_obj("Logo_HUQUQ_MAKTABI", C_ADMIN, "HUQUQ MAKTABI", FONT_XB, 0.30, M_LOGO, (6.0, 5.86, 2.38), (math.radians(90), 0, 0), extrude=0.012, spacing=1.05)
-gold = Builder("Logo_Gold_Line", C_ADMIN); gold.box(5.2, 5.862, 2.16, 6.8, 5.875, 2.172, M_GOLD); gold.build()
-text_obj("Spec_Row1", C_ADMIN, "PROKURATURA   •   ICHKI ISHLAR ORGANLARI   •   ADLIYA", FONT_SB, 0.062, M_SPEC_TXT, (6.0, 5.868, 1.94), (math.radians(90), 0, 0), extrude=0.003)
-text_obj("Spec_Row2", C_ADMIN, "SUD TIZIMI   •   YURIDIK KADRLAR   •   DAVLAT XIZMATI", FONT_SB, 0.062, M_SPEC_TXT, (6.0, 5.868, 1.78), (math.radians(90), 0, 0), extrude=0.003)
+text_obj("Logo_HUQUQ_MAKTABI", C_ADMIN, "HUQUQ MAKTABI", FONT_XB, 0.30, M_LOGO, (6.0, 5.665, 2.38), (math.radians(90), 0, 0), extrude=0.012, spacing=1.05)
+gold = Builder("Logo_Gold_Line", C_ADMIN); gold.box(5.2, 5.662, 2.16, 6.8, 5.675, 2.172, M_GOLD); gold.build()
+text_obj("Spec_Row1", C_ADMIN, "PROKURATURA   •   ICHKI ISHLAR ORGANLARI   •   ADLIYA", FONT_SB, 0.062, M_SPEC_TXT, (6.0, 5.668, 1.94), (math.radians(90), 0, 0), extrude=0.003)
+text_obj("Spec_Row2", C_ADMIN, "SUD TIZIMI   •   YURIDIK KADRLAR   •   DAVLAT XIZMATI", FONT_SB, 0.062, M_SPEC_TXT, (6.0, 5.668, 1.78), (math.radians(90), 0, 0), extrude=0.003)
 
-# ================================================================== CLASSROOMS
+# ================================================================== CLASSROOMS (Law x 0.2..3.9, Languages mirrored x' = 12 - x)
+# Students face +Y toward the whiteboard on the back wall: 3 rows x 2 desks x 2 seats = 12 seats.
+# Front clearance board->first desk 1.35 m, aisle 0.80 m, rear circulation 0.80 m, row pitch 1.20 m.
+ROWS_Y0 = (3.95, 2.75, 1.55); COLS = ((0.45, 1.65), (2.45, 3.65)); DESK_D = 0.5
 def classroom(mirror, coll, wb_mat, slide_mat, prints, tag):
-    """Builds a classroom in the 0..3.94 frame, mirrored for x' = 12 - x."""
     def X(x): return 12 - x if mirror else x
+    def xs(a, b): return tuple(sorted((X(a), X(b))))
     def box(b, x0, y0, z0, x1, y1, z1, m, M=None):
-        a, c = sorted((X(x0), X(x1))); b.box(a, y0, z0, c, y1, z1, m, M)
-    rz = 180 if mirror else 0
+        a, c = xs(x0, x1); b.box(a, y0, z0, c, y1, z1, m, M)
+    fs = -1 if mirror else 1
     f = Builder(f"{tag}_Furniture", coll); cu = Builder(f"{tag}_Upholstery", coll)
-    # student desks: 2 rows x 2 columns, 3 seats each; students face the whiteboard (-X)
-    for rx0 in (1.45, 2.6):
-        for (y0, y1) in [(0.55, 2.15), (3.85, 5.45)]:
-            a, c = sorted((X(rx0), X(rx0 + 0.55)))
-            desk(f, a, y0, c, y1, M_OAK_Y, M_WHITE_MET)
-            box(f, rx0 + 0.53, y0 + 0.05, 0.62, rx0 + 0.55, y1 - 0.05, 0.72, M_WHITE_MET)
-            for k in range(3):
-                yc = y0 + 0.27 + k * 0.53
-                chair(f, cu, T(X(rx0 + 0.86), yc, 0, (-90 if not mirror else 90) + random.uniform(-7, 7)), M_FABRIC_GR)
-                if random.random() < 0.6:
-                    books(f, X(rx0 + 0.25), yc + random.uniform(-0.1, 0.1), 0.75, random.uniform(70, 110), random.randint(1, 2))
-    # teacher desk + chair near window
-    a, c = sorted((X(0.35), X(1.05)))
-    desk(f, a, 0.5, c, 1.75, M_OAK_Y, M_WHITE_MET)
-    box(f, 0.37, 0.52, 0.0, 0.39, 1.73, 0.72, M_OAK_Z)
-    chair(f, cu, T(X(0.0 + 0.0) if False else X(0.75), 1.12, 0, 90 if not mirror else -90), M_LEATHER, arms=True) if False else None
-    chair(f, cu, T(X(0.62) if mirror else X(0.62), 1.12, 0, (90 if not mirror else -90)), M_FABRIC_GR, arms=True)
-    laptop(f, X(0.7), 1.0, 90 if mirror else -90, 108)
-    books(f, X(0.6), 1.55, 0.75, 20, 3)
-    # whiteboard (x=0 wall), aluminium frame, marker tray
-    wx = X(0.012); s = -1 if mirror else 1
-    box(f, 0.01, 1.68, 0.88, 0.035, 4.32, 2.12, M_STEEL)
-    wall_plane(f"{tag}_Whiteboard", coll, "X", X(0.036), 1.71, 4.29, 0.91, 2.09, wb_mat, facing=-1 if mirror else 1)
-    box(f, 0.03, 1.9, 0.86, 0.09, 4.1, 0.88, M_STEEL)
+    for y0 in ROWS_Y0:
+        for (c0, c1) in COLS:
+            a, c = xs(c0, c1)
+            desk(f, a, y0, c, y0 + DESK_D, M_OAK_X, M_WHITE_MET)
+            box(f, c0 + 0.05, y0 + DESK_D - 0.02, 0.42, c1 - 0.05, y0 + DESK_D, 0.70, M_WHITE_MET)   # modesty panel
+            for dx in (0.3, 0.9):
+                chair(f, cu, T(X(c0 + dx), y0 - 0.30, 0, 180 + random.uniform(-7, 7)), M_FABRIC_GR)
+                if random.random() < 0.55:
+                    books(f, X(c0 + dx), y0 + 0.25, 0.75, random.uniform(-15, 15), random.randint(1, 2))
+    # teacher desk + chair (front, partition side), teacher faces the class (-Y)
+    a, c = xs(2.85, 3.75)
+    desk(f, a, 4.8, c, 5.3, M_OAK_X, M_WHITE_MET)
+    box(f, 2.87, 4.8, 0.0, 3.73, 4.82, 0.72, M_OAK_X)
+    chair(f, cu, T(X(3.3), 5.5, 0, 0), M_FABRIC_GR, arms=True)
+    laptop(f, X(3.25), 5.0, 180, 108); books(f, X(3.6), 5.1, 0.75, 20, 3)
+    # whiteboard on the back wall (accent wall), aluminium frame + tray
+    box(f, 0.58, 5.765, 0.88, 2.62, 5.79, 2.12, M_STEEL)
+    a, c = xs(0.61, 2.59)
+    wall_plane(f"{tag}_Whiteboard", coll, "Y", 5.764, a, c, 0.91, 2.09, wb_mat, facing=-1)
+    box(f, 0.8, 5.71, 0.86, 2.4, 5.77, 0.88, M_STEEL)
     for k, col in enumerate([M_BOOK[1], M_BOOK[0], M_PLASTIC_DK]):
-        f.cyl(X(0.06), 2.2 + k * 0.08, 0.88, 0.895, 0.009, col, n=8, M=Matrix.Translation((0, 0, 0)))
-    # wall-mounted TV (x=0 wall) right of whiteboard
-    box(f, 0.01, 4.55, 1.22, 0.06, 5.77, 1.92, M_PLASTIC_DK)
-    wall_plane(f"{tag}_TV_Screen", coll, "X", X(0.062), 4.565, 5.755, 1.235, 1.905, slide_mat, facing=-1 if mirror else 1)
-    # framed prints on back wall (y = 6), facing -Y
-    for k, (cx, pm) in enumerate(zip((1.35, 2.85), prints)):
-        x0, x1 = sorted((X(cx - 0.33), X(cx + 0.33)))
-        f.box(x0 - 0.035, 5.955, 1.18, x1 + 0.035, 5.99, 2.10, M_BLACK_MET)          # frame
-        f.box(x0, 5.95, 1.215, x1, 5.956, 2.065, M_PAPER)                               # passe-partout
-        plane_obj(f"{tag}_Print_{k}", coll, [(x1 - 0.05, 5.949, 1.29), (x0 + 0.05, 5.949, 1.29), (x0 + 0.05, 5.949, 1.99), (x1 - 0.05, 5.949, 1.99)], pm)
-        gl2 = Builder(f"{tag}_PrintGlass_{k}", coll); gl2.box(x0, 5.946, 1.215, x1, 5.948, 2.065, M_GLASS); gl2.build()
-    # wall clock above whiteboard
-    f.cyl(0, 0, 0, 0.03, 0.16, M_WHITE_MET, n=32, M=Matrix.Translation((X(0.015), 3.0, 2.55)) @ Matrix.Rotation(math.radians(90 * s), 4, "Y"))
-    # bookcase on back wall corner
-    bx0, bx1 = sorted((X(3.0), X(3.85)))
-    f.box(bx0, 5.62, 0, bx1, 5.99, 0.9, M_OAK_X)
-    for k in range(3): books(f, (bx0 + bx1) / 2 + (k - 1) * 0.25, 5.8, 0.9, 90, 2)
+        f.cyl(X(1.1 + k * 0.08), 5.74, 0.88, 0.895, 0.009, col, n=8)
+    f.cyl(0, 0, 0, 0.03, 0.16, M_WHITE_MET, n=32, M=Matrix.Translation((X(1.6), 5.79, 2.55)) @ Matrix.Rotation(math.radians(90), 4, "X"))
+    # wall-mounted TV on the end wall (front part of the room)
+    box(f, 0.21, 4.0, 1.22, 0.26, 5.22, 1.92, M_PLASTIC_DK)
+    wall_plane(f"{tag}_TV_Screen", coll, "X", X(0.262), 4.015, 5.205, 1.235, 1.905, slide_mat, facing=fs)
+    # two framed prints on the end wall
+    for k, (cy_, pm) in enumerate(zip((2.0, 3.15), prints)):
+        box(f, 0.21, cy_ - 0.365, 1.18, 0.245, cy_ + 0.365, 2.10, M_BLACK_MET)
+        box(f, 0.245, cy_ - 0.33, 1.215, 0.25, cy_ + 0.33, 2.065, M_PAPER)
+        wall_plane(f"{tag}_Print_{k}", coll, "X", X(0.252), cy_ - 0.28, cy_ + 0.28, 1.29, 1.99, pm, facing=fs)
+        g2 = Builder(f"{tag}_PrintGlass_{k}", coll); a, c = xs(0.254, 0.256); g2.box(a, cy_ - 0.33, 1.215, c, cy_ + 0.33, 2.065, M_GLASS); g2.build()
+    # low bookcase under the rear windows
+    box(f, 0.3, 0.21, 0, 1.75, 0.52, 0.8, M_OAK_X)
+    for k in range(3): books(f, X(0.6 + k * 0.45), 0.36, 0.8, 0, 2)
     f.build(bevel=0.003); cu.build(bevel=0.02, segs=3, smooth=True)
-    plant(coll, f"{tag}_Plant", X(3.65), 0.45, pot_h=0.45, pot_r=0.17, height=0.85, leaves=80, mat=M_PLANT_DK)
+    plant(coll, f"{tag}_Plant", X(0.45), 5.5, pot_h=0.45, pot_r=0.17, height=0.85, leaves=80, mat=M_PLANT_DK)
 
 classroom(False, C_LAW, M_WB, M_SLIDE_LAW, (M_PR["law"], M_PR["history"]), "Law")
 classroom(True, C_LANG, M_WB2, M_SLIDE_LANG, (M_PR["world"], M_PR["hello"]), "Lang")
-# classroom name plates beside doors (admin side)
-text_obj("Plate_Law", C_ADMIN, "HUQUQ VA TARIX", FONT_SB, 0.055, M_GRAPHITE, (4.07, 2.85, 1.6), (math.radians(90), 0, math.radians(90)), extrude=0.002)
-text_obj("Plate_Lang", C_ADMIN, "XORIJIY TILLAR", FONT_SB, 0.055, M_GRAPHITE, (7.93, 2.85, 1.6), (math.radians(90), 0, math.radians(-90)), extrude=0.002)
 
 # ================================================================== LIGHTING
 def area(name, loc, size, energy, color=(1, 0.93, 0.85), rot=(0, 0, 0), sy=None, spread=180):
@@ -743,32 +710,29 @@ def area(name, loc, size, energy, color=(1, 0.93, 0.85), rot=(0, 0, 0), sy=None,
     C_LIGHT.objects.link(ob); return ob
 
 fx = Builder("Light_Fixtures", C_LIGHT)
-# classroom 600x600 LED panels (2 x 3 grid per room)
-for zx0 in (0.0, 8.06):
-    for cx in (zx0 + 1.2, zx0 + 2.75):
-        for cy in (1.2, 3.0, 4.8):
+for mirror in (False, True):
+    for cx0 in (1.1, 3.0):
+        cx = 12 - cx0 if mirror else cx0
+        for cy in (1.3, 3.0, 4.7):
             fx.box(cx - 0.31, cy - 0.31, H - 0.012, cx + 0.31, cy + 0.31, H - 0.001, M_WHITE_MET)
             fx.box(cx - 0.29, cy - 0.29, H - 0.014, cx + 0.29, cy + 0.29, H - 0.012, M_PANEL)
             area(f"Panel_{cx:.1f}_{cy:.1f}", (cx, cy, H - 0.02), (0.58, 0.58), 42, (1, 0.95, 0.88))
-# admin: two linear slot lights + downlights
 for cx in (5.0, 7.0):
-    fx.box(cx - 0.04, 0.5, H - 0.012, cx + 0.04, 4.4, H - 0.001, M_BLACK_AL)
-    fx.box(cx - 0.025, 0.52, H - 0.014, cx + 0.025, 4.38, H - 0.012, M_PANEL)
-    area(f"Linear_{cx}", (cx, 2.45, H - 0.02), (0.06, 3.85), 68, (1, 0.94, 0.86))
-for (cx, cy) in [(6.0, 1.0), (5.6, 4.9), (6.4, 4.9)]:
+    fx.box(cx - 0.04, 0.6, H - 0.012, cx + 0.04, 4.3, H - 0.001, M_BLACK_AL)
+    fx.box(cx - 0.025, 0.62, H - 0.014, cx + 0.025, 4.28, H - 0.012, M_PANEL)
+    area(f"Linear_{cx}", (cx, 2.45, H - 0.02), (0.06, 3.65), 68, (1, 0.94, 0.86))
+for (cx, cy) in [(6.0, 0.75), (5.6, 4.85), (6.4, 4.85)]:
     fx.cyl(cx, cy, H - 0.012, H - 0.001, 0.05, M_BLACK_AL, n=24); fx.cyl(cx, cy, H - 0.013, H - 0.012, 0.035, M_LED_WARM, n=24)
     area(f"Down_{cx}_{cy}", (cx, cy, H - 0.02), (0.07, 0.07), 22, (1, 0.88, 0.74), spread=60)
-# signature wall grazing light (from ceiling cove)
-fx.box(4.06, 5.70, H - 0.06, 7.94, 5.75, H, M_CEIL)
-area("Wall_Grazer", (6.0, 5.82, H - 0.03), (3.8, 0.06), 70, (0.86, 0.91, 1.0), spread=70)
-area("Wall_Floor_Uplight", (6.0, 5.88, 0.02), (3.8, 0.04), 18, (1.0, 0.85, 0.66), rot=(math.radians(180), 0, 0), spread=60)
-# entrance canopy downlights
+fx.box(4.0, 5.5, H - 0.06, 8.0, 5.55, H, M_CEIL)
+area("Wall_Grazer", (6.0, 5.62, H - 0.03), (3.8, 0.06), 70, (0.86, 0.91, 1.0), spread=70)
+area("Wall_Floor_Uplight", (6.0, 5.68, 0.02), (3.8, 0.04), 18, (1.0, 0.85, 0.66), rot=(math.radians(180), 0, 0), spread=60)
 for cx in (4.6, 6.0, 7.4):
-    fx.cyl(cx, -0.75, 3.299, 3.31, 0.06, M_LED_WARM, n=24)
-    area(f"Canopy_{cx}", (cx, -0.75, 3.29), (0.1, 0.1), 25, (1, 0.86, 0.7), spread=70)
+    fx.cyl(cx, -0.5, 3.299, 3.31, 0.06, M_LED_WARM, n=24)
+    area(f"Canopy_{cx}", (cx, -0.5, 3.29), (0.1, 0.1), 25, (1, 0.86, 0.7), spread=70)
 fx.build()
 
-# sun + sky (late afternoon, golden hour)
+# sun + sky: dusk / blue hour (sun just above the horizon)
 sun = bpy.data.lights.new("Sun", "SUN"); sun.energy = 0.6; sun.angle = math.radians(1.0); sun.color = (1.0, 0.62, 0.38)
 so = bpy.data.objects.new("Sun", sun); so.rotation_euler = (math.radians(86), 0, math.radians(-38)); C_LIGHT.objects.link(so)
 world = bpy.data.worlds.new("Sky"); scene.world = world; world.use_nodes = True
@@ -786,8 +750,8 @@ wn.links.new(sky.outputs[0], bg.inputs[0]); wn.links.new(bg.outputs[0], wo.input
 # ================================================================== EXTERIOR
 ex_b = Builder("Exterior_Ground", C_EXT)
 ex_b.box(-30, -30, -0.06, 45, 40, -0.05, M_GRASS)
-ex_b.box(-4, -6.5, -0.05, 16, -0.25, 0.0, M_PAVER)
-ex_b.box(-4, -0.25, -0.05, -0.25, 7.5, 0.0, M_PAVER); ex_b.box(12.25, -0.25, -0.05, 16, 7.5, 0.0, M_PAVER)        # plaza / sidewalk
+ex_b.box(-4, -6.5, -0.05, 16, 0.0, 0.0, M_PAVER)
+ex_b.box(-4, 0.0, -0.05, 0.0, 7.5, 0.0, M_PAVER); ex_b.box(12.0, 0.0, -0.05, 16, 7.5, 0.0, M_PAVER)        # plaza / sidewalk
 ex_b.box(-30, -6.75, -0.05, 45, -6.5, 0.12, M_CURB)             # curb
 ex_b.box(-30, -14.5, -0.08, 45, -6.75, -0.04, M_ASPHALT)        # road
 for k in range(-10, 16):
@@ -796,21 +760,21 @@ ex_b.box(-30, -16.5, -0.05, 45, -14.5, 0.0, M_PAVER)            # far sidewalk
 ex_b.build()
 # entrance portal (oak-clad canopy + fins) and sign
 po = Builder("Entrance_Portal", C_EXT)
-po.box(3.80, -1.25, 0, 4.0, -0.25, TOP, M_OAK_Z)
-po.box(8.0, -1.25, 0, 8.20, -0.25, TOP, M_OAK_Z)
-po.box(3.80, -1.25, 3.30, 8.20, -0.25, TOP, M_OAK_X)
-po.box(3.80, -1.27, 3.30, 8.20, -1.25, TOP, M_GRAPHITE)        # sign band
+po.box(3.80, -1.0, 0, 4.0, 0.0, TOP, M_OAK_Z)
+po.box(8.0, -1.0, 0, 8.20, 0.0, TOP, M_OAK_Z)
+po.box(3.80, -1.0, 3.30, 8.20, 0.0, TOP, M_OAK_X)
+po.box(3.80, -1.02, 3.30, 8.20, -1.0, TOP, M_GRAPHITE)        # sign band
 po.build(bevel=0.006)
-text_obj("Exterior_Sign", C_EXT, "HUQUQ MAKTABI", FONT_XB, 0.30, M_LOGO, (6.0, -1.285, 3.58), (math.radians(90), 0, 0), extrude=0.02)
+text_obj("Exterior_Sign", C_EXT, "HUQUQ MAKTABI", FONT_XB, 0.30, M_LOGO, (6.0, -1.035, 3.58), (math.radians(90), 0, 0), extrude=0.02)
 # planters by the entrance
 pl = Builder("Planters", C_EXT)
 for cx in (2.9, 9.1):
-    pl.box(cx - 0.6, -1.2, 0, cx + 0.6, -0.6, 0.45, M_FACADE)
-    pl.box(cx - 0.56, -1.16, 0.40, cx + 0.56, -0.64, 0.42, M_SOIL)
+    pl.box(cx - 0.6, -1.0, 0, cx + 0.6, -0.4, 0.45, M_FACADE)
+    pl.box(cx - 0.56, -0.96, 0.40, cx + 0.56, -0.44, 0.42, M_SOIL)
 pl.build(bevel=0.01)
 for cx in (2.9, 9.1):
     for dx in (-0.35, 0.0, 0.35):
-        plant(C_EXT, f"Shrub_{cx}_{dx}", cx + dx, -0.9, pot_h=0.42, pot_r=0.001, height=0.5, leaves=70, mat=M_PLANT_DK)
+        plant(C_EXT, f"Shrub_{cx}_{dx}", cx + dx, -0.7, pot_h=0.42, pot_r=0.001, height=0.5, leaves=70, mat=M_PLANT_DK)
 # bollard lights along path
 bl = Builder("Bollards", C_EXT)
 for cx in (4.5, 7.5):
@@ -865,11 +829,11 @@ def tree(name, x, y, h=6.5, r=2.2):
 for i, (x, y) in enumerate([(-3.8, 9), (2.0, 11.0), (9.8, 10.5), (15.8, 8.5), (-6.5, -4.6), (18.5, -4.2), (-12, 4)]):
     tree(f"Tree_{i}", x, y, h=random.uniform(6.5, 8.5), r=random.uniform(2.2, 2.9))
 # facade wall-washers (dusk) on the piers between windows + grazing on portal
-for (cx, tgt) in [(-0.0, 0), (2.0, 0), (10.0, 0), (12.0, 0)]:
-    area(f"Facade_Uplight_{cx}", (cx, -0.45, 0.05), (0.08, 0.08), 6, (1, 0.8, 0.58), rot=(math.radians(-12), 0, 0), spread=35)
+for (cx, tgt) in [(0.35, 0), (2.05, 0), (9.95, 0), (11.65, 0)]:
+    area(f"Facade_Uplight_{cx}", (cx, -0.2, 0.05), (0.08, 0.08), 6, (1, 0.8, 0.58), rot=(math.radians(-12), 0, 0), spread=35)
 fxe = Builder("Facade_Uplight_Fixtures", C_EXT)
-for cx in (0.0, 2.0, 10.0, 12.0):
-    fxe.box(cx - 0.06, -0.52, 0, cx + 0.06, -0.38, 0.05, M_BLACK_AL); fxe.box(cx - 0.04, -0.5, 0.05, cx + 0.04, -0.4, 0.052, M_LED_WARM)
+for cx in (0.35, 2.05, 9.95, 11.65):
+    fxe.box(cx - 0.06, -0.27, 0, cx + 0.06, -0.13, 0.05, M_BLACK_AL); fxe.box(cx - 0.04, -0.25, 0.05, cx + 0.04, -0.15, 0.052, M_LED_WARM)
 fxe.build()
 # street lamps
 sl = Builder("Street_Lamps", C_EXT)
@@ -884,9 +848,9 @@ sl.build()
 bln = Builder("Roller_Blinds", C_ARCH)
 M_BLIND = textured("Blind_Fabric", srgb("#e9e5dc"), 0.9, 600, 0.05, sheen=0.3)
 for (a, b) in WINDOWS:
-    bln.box(a + 0.02, 0.02, 2.62, b - 0.02, 0.09, 2.72, M_WHITE_MET)
-    bln.box(a + 0.04, 0.045, 2.18, b - 0.04, 0.05, 2.62, M_BLIND)
-    bln.box(a + 0.04, 0.035, 2.16, b - 0.04, 0.06, 2.18, M_WHITE_MET)
+    bln.box(a + 0.02, 0.22, 2.62, b - 0.02, 0.29, 2.72, M_WHITE_MET)
+    bln.box(a + 0.04, 0.245, 2.18, b - 0.04, 0.25, 2.62, M_BLIND)
+    bln.box(a + 0.04, 0.235, 2.16, b - 0.04, 0.26, 2.18, M_WHITE_MET)
 bln.build()
 
 # ================================================================== ANIMATION
@@ -920,24 +884,24 @@ camA = make_cam("CAM_A_Exterior", 28,
                 [(1, (5.0, 0.0, 2.0)), (144, (6.0, 0.0, 1.9))], fstop=11)
 # B — one continuous take: approach, door opens, enter, coworking reveal, pans, admin wall, details, law class
 P = [
-    (145, (6.0, -7.2, E)), (230, (6.0, -2.4, E)), (300, (6.0, -0.4, E)), (360, (6.0, 1.15, E)),     # approach + enter
-    (552, (6.0, 1.45, E)),                                                                              # pan left/right (slow creep)
-    (690, (6.0, 3.35, 1.62)),                                                                           # glide toward admin desk
-    (760, (7.0, 3.5, 1.5)), (860, (5.05, 3.8, 1.5)),                                                  # details: cooler/plant -> TV
-    (935, (3.75, 3.6, E)), (1000, (3.15, 2.9, E)), (1056, (3.0, 2.45, E)),                               # into Law & History
+    (145, (6.0, -7.0, E)), (230, (6.0, -2.2, E)), (300, (6.0, -0.2, E)), (360, (6.0, 1.0, E)),       # approach, door opens, enter
+    (552, (6.0, 1.3, E)),                                                                              # reveal + pan left/right
+    (690, (6.0, 2.85, 1.62)),                                                                          # glide toward admin desk
+    (760, (7.05, 3.2, 1.5)), (850, (5.3, 3.25, 1.5)),                                                  # cooler/plants -> TV
+    (900, (5.6, 2.0, 1.55)), (950, (4.6, 0.85, 1.55)), (995, (3.35, 0.75, 1.6)), (1056, (2.9, 0.7, 1.65)),  # into Law & History
 ]
 TG = [
-    (145, (6.0, 0.0, 1.45)), (230, (6.0, 1.0, 1.35)), (300, (6.0, 4.0, 1.4)), (360, (6.0, 5.5, 1.4)),
-    (400, (6.0, 5.5, 1.3)), (440, (4.4, 2.6, 1.3)), (470, (4.3, 1.5, 1.45)), (500, (7.7, 1.5, 1.45)), (530, (7.7, 2.6, 1.3)), (552, (6.0, 5.6, 1.6)),
-    (690, (6.0, 6.0, 2.05)),
-    (760, (7.62, 5.05, 1.0)), (800, (7.0, 6.0, 1.4)), (860, (4.1, 5.0, 1.45)),
-    (935, (0.0, 3.4, 1.4)), (1000, (0.0, 3.6, 1.35)), (1056, (2.1, 6.0, 1.55)),
+    (145, (6.0, 0.0, 1.45)), (230, (6.0, 1.0, 1.35)), (300, (6.0, 4.0, 1.4)), (360, (6.0, 5.3, 1.4)),
+    (400, (6.0, 5.3, 1.3)), (440, (4.4, 2.2, 1.35)), (470, (4.3, 1.8, 1.45)), (500, (7.7, 1.8, 1.45)), (530, (7.6, 2.4, 1.35)), (552, (6.0, 5.4, 1.6)),
+    (690, (6.0, 5.8, 2.05)),
+    (760, (7.62, 4.75, 1.0)), (800, (6.9, 5.8, 1.4)), (850, (4.05, 4.6, 1.45)),
+    (900, (4.0, 0.85, 1.4)), (950, (2.4, 1.0, 1.4)), (995, (1.8, 4.5, 1.3)), (1020, (1.6, 5.8, 1.4)), (1056, (0.2, 3.2, 1.55)),
 ]
 camB = make_cam("CAM_B_Walkthrough", 22, P, TG, fstop=8)
 # C — Foreign languages classroom
 camC = make_cam("CAM_C_Languages", 22,
-                [(1057, (8.35, 3.65, E)), (1140, (9.3, 3.1, E)), (1224, (9.15, 2.3, E))],
-                [(1057, (12.0, 3.2, 1.35)), (1140, (12.0, 3.4, 1.35)), (1224, (10.1, 6.0, 1.55))], fstop=8)
+                [(1057, (8.3, 0.88, E)), (1140, (9.15, 0.78, 1.6)), (1224, (9.25, 0.8, 1.62))],
+                [(1057, (9.6, 5.8, 1.4)), (1140, (10.4, 5.8, 1.4)), (1224, (11.8, 3.2, 1.55))], fstop=8)
 # D — final cinematic wide (crane up & pull back)
 camD = make_cam("CAM_D_FinalWide", 26,
                 [(1225, (6.0, -5.5, 1.5)), (1392, (3.6, -13.5, 3.6))],

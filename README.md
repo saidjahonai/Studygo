@@ -1,13 +1,21 @@
 # HUQUQ MAKTABI: architectural visualization
 
-Photorealistic architectural walkthrough of the HUQUQ MAKTABI training centre,
-a 12 × 6 m (72 m²) building split into three 4 × 6 m zones.
+Photorealistic architectural walkthrough of the HUQUQ MAKTABI training centre.
 
-| # | Zone | Content |
-|---|------|---------|
-| 1 | **Law & History classroom** (4 × 6 m) | light-oak desks for 12, upholstered chairs, whiteboard, wall-mounted TV, 2 framed legal/history prints, navy accent wall |
-| 2 | **Administration + Coworking** (4 × 6 m, **one combined space**) | glass partition with a separate glass entrance door. Coworking table straight ahead, coworking counters left and right, a 1.5 m circulation aisle, and the administrator/reception desk at the back in front of the illuminated signature wall |
-| 3 | **Foreign Languages classroom** (4 × 6 m) | same light-oak furniture, whiteboard, wall-mounted TV, 2 framed international-education prints, teal accent wall |
+**Footprint 12.0 × 6.0 m = 72 m² gross**, with 200 mm external walls and 100 mm partitions; the clear interior is 11.6 × 5.6 m.
+The **main entrance is a glass door at the exact centre of the 12 m front facade** (x = 6 000 mm).
+Standing outside and looking through the entrance:
+
+| Position | Zone | Clear size | Content |
+|---|------|-----|---------|
+| **LEFT** | **Law & History classroom** | 3.70 × 5.60 m (20.7 m²) | 12 seats in light-oak desks (3 rows × 2 desks × 2), upholstered chairs, whiteboard on a navy accent wall, wall-mounted TV, 2 framed legal/history prints, teacher desk |
+| **CENTRE** | **Administration + Coworking**, one combined space | 4.00 × 5.60 m (22.4 m²) | glass partition with a separate central glass door, entry vestibule, coworking counters LEFT and RIGHT (2 seats each), coworking table directly ahead (3 seats facing the feature wall), administrator desk at the back |
+| **RIGHT** | **Foreign Languages classroom** | 3.70 × 5.60 m (20.7 m²) | same furniture, whiteboard on a teal accent wall, TV, 2 framed international-education prints |
+
+There are only two classrooms. Room widths are derived from furniture and circulation, not from equal thirds:
+
+* **Admin:** 0.6 m counters each side, a 1.6 m central aisle from the door, and 1.2 m corridors each side of the coworking table leading to the administrator desk, water cooler and TV.
+* **Classrooms:** students face the board along the 5.6 m axis. There is 1.35 m between the board and the first desk, an 0.8 m aisle, a 1.2 m row pitch and an 0.8 m rear circulation zone. Each classroom door (1 000 mm, in the partition next to the vestibule) opens into that rear zone.
 
 **Signature wall** (behind the administrator): navy acoustic slats on a graphite felt backing,
 a graphite logo panel with an illuminated white **HUQUQ MAKTABI** logo and a brass rule, and cool LED contour
@@ -23,6 +31,7 @@ motion-graphics loop, two white planters, a water cooler and a fluted-oak recept
 | `blender/huquq_maktabi.blend` | Editable Blender 5.2 project (collections per zone, cameras, lights, materials) |
 | `renders/stills/*.png` | High-resolution interior/exterior stills (2560×1440) |
 | `docs/floor_plan.png` / `.pdf` | Dimensioned floor plan (mm), A3 |
+| `renders/stills/00_topdown_plan.png` | Photoreal top-down plan render of the 3D model (ceiling cut away) |
 | `scripts/` | Fully procedural pipeline (see below) |
 
 ## Film sequence
@@ -33,7 +42,7 @@ motion-graphics loop, two white planters, a water cooler and a fluted-oak recept
 4. Smooth pan left and right across the coworking counters
 5. Glide toward the administrator's desk, revealing the illuminated signature wall
 6. Details: water cooler and planters, then the TV with HUQUQ MAKTABI motion graphics
-7. Through the door into the **Law & History** classroom (desks, whiteboard, TV, framed prints)
+7. Back through the vestibule and the door on the left into the **Law & History** classroom (desks, whiteboard, TV, framed prints)
 8. Dissolve to the **Foreign Languages** classroom
 9. Final cinematic wide: crane up and pull back from the glowing facade, then the title card
 
