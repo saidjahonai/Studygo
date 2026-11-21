@@ -343,7 +343,7 @@ def text_obj(name, coll, body, font, size, mat, loc, rot, extrude=0.004, align="
 # Overall building footprint 12.0 x 6.0 m (72 m2 gross). External walls 200 mm,
 # partitions 100 mm. Clear widths are set from furniture + circulation, not equal thirds:
 #   Law & History 3.70 | partition 0.10 | Admin+Coworking 4.00 | partition 0.10 | Languages 3.70  (= 11.60 clear)
-WT = 0.20; TOP = 3.85
+WT = 0.20; TOP = 3.90
 IX0, IX1, IY0, IY1 = WT, 12 - WT, WT, 6 - WT          # interior 0.2..11.8 x 0.2..5.8
 LAW = (0.20, 3.90); P1 = (3.90, 4.00); ADM = (4.00, 8.00); P2 = (8.00, 8.10); LANG = (8.10, 11.80)
 CDY = (0.35, 1.35)                                    # classroom door openings (in partitions), 1000 mm
@@ -546,35 +546,27 @@ def plant(coll, name, x, y, pot_h=0.55, pot_r=0.22, height=1.25, leaves=110, mat
 adm = Builder("Admin_Furniture", C_ADMIN)
 cush = Builder("Admin_Upholstery", C_ADMIN)
 # entry vestibule y 0.2..1.45 kept clear (classroom doors left & right at y 0.35..1.35)
-# coworking counters along both partitions, y 1.5..3.0, depth 0.6
+# coworking ONLY along both sides (counters on the partitions), y 1.5..3.7, depth 0.6;
+# the centre stays open so nothing blocks the administrator desk
 for (x0, x1) in [(4.0, 4.6), (7.4, 8.0)]:
-    adm.box(x0, 1.5, 0.72, x1, 3.0, 0.75, M_OAK_Y)
-    for y in (1.52, 2.24, 2.96):
+    adm.box(x0, 1.5, 0.72, x1, 3.7, 0.75, M_OAK_Y)
+    for y in (1.52, 2.61, 3.68):
         adm.box(x0 + 0.02, y - 0.02, 0, x1 - 0.04, y, 0.72, M_WHITE_MET)
-adm.box(4.0, 1.6, 1.55, 4.3, 2.9, 1.575, M_OAK_Y); adm.box(7.7, 1.6, 1.55, 8.0, 2.9, 1.575, M_OAK_Y)
+adm.box(4.0, 1.6, 1.55, 4.3, 3.6, 1.575, M_OAK_Y); adm.box(7.7, 1.6, 1.55, 8.0, 3.6, 1.575, M_OAK_Y)
 books(adm, 4.15, 1.85, 1.575, 90, 3); books(adm, 7.85, 2.65, 1.575, 90, 4)
 for (wx, face, txt) in [(4.0, 1, "COWORKING"), (8.0, -1, "BILIM  •  INTIZOM  •  ADOLAT")]:
     x0, x1 = (wx, wx + 0.035) if face > 0 else (wx - 0.035, wx)
-    adm.box(x0, 1.6, 1.78, x1, 2.9, 2.62, M_NAVY_FELT)
+    adm.box(x0, 1.6, 1.78, x1, 3.6, 2.62, M_NAVY_FELT)
     fx0, fx1 = (x1, x1 + 0.006) if face > 0 else (x0 - 0.006, x0)
-    adm.box(fx0, 1.59, 1.77, fx1, 2.91, 1.785, M_OAK_Y); adm.box(fx0, 1.59, 2.615, fx1, 2.91, 2.63, M_OAK_Y)
+    adm.box(fx0, 1.59, 1.77, fx1, 3.61, 1.785, M_OAK_Y); adm.box(fx0, 1.59, 2.615, fx1, 3.61, 2.63, M_OAK_Y)
     text_obj(f"Wall_Text_{txt[:4]}", C_ADMIN, txt, FONT_XB if face > 0 else FONT_SB, 0.15 if face > 0 else 0.075,
-             M_SPEC_TXT, ((x1 + 0.004) if face > 0 else (x0 - 0.004), 2.25, 2.2),
+             M_SPEC_TXT, ((x1 + 0.004) if face > 0 else (x0 - 0.004), 2.6, 2.2),
              (math.radians(90), 0, math.radians(90 if face > 0 else -90)), extrude=0.003)
-for y in (1.85, 2.62):
+for y in (1.9, 2.6, 3.3):
     chair(adm, cush, T(4.95, y, 0, -90 + random.uniform(-8, 8)), M_FABRIC_NAVY)     # faces left counter
     chair(adm, cush, T(7.05, y, 0, 90 + random.uniform(-8, 8)), M_FABRIC_NAVY)      # faces right counter
-laptop(adm, 4.3, 1.85, 90, 112); laptop(adm, 7.7, 2.62, -90, 108)
+laptop(adm, 4.3, 1.9, 90, 112); laptop(adm, 7.7, 2.6, -90, 108); laptop(adm, 4.3, 3.3, 90, 105)
 mug(adm, 4.45, 2.3, 0.75); books(adm, 7.62, 1.8, 0.75, 15, 2)
-# central coworking table directly ahead of the entrance (1.6 x 0.7), seats face the signature wall
-desk(adm, 5.2, 3.35, 6.8, 4.05, M_OAK_X, M_BLACK_MET)
-for x in (5.55, 6.0, 6.45):
-    chair(adm, cush, T(x, 3.03, 0, 180 + random.uniform(-6, 6)), M_FABRIC_OLIVE)
-laptop(adm, 5.55, 3.62, 0, 108); laptop(adm, 6.45, 3.6, 4, 110)
-mug(adm, 6.12, 3.75, 0.75); books(adm, 5.95, 3.85, 0.75, 80, 3)
-adm.box(5.94, 3.9, 0.75, 6.06, 4.0, 0.785, M_PLASTIC_DK)
-rug = Builder("Rug", C_ADMIN); rug.box(5.0, 2.6, 0, 7.0, 4.3, 0.008, M_RUG); rug.build(bevel=0.004)
-
 # administrator / reception desk at the back (front face y 4.55)
 RX0, RX1 = 5.15, 6.85
 adm.box(RX0, 4.55, 0, RX1, 4.59, 1.05, M_OAK_Z)
@@ -748,24 +740,115 @@ wo = wn.nodes.new("ShaderNodeOutputWorld")
 wn.links.new(sky.outputs[0], bg.inputs[0]); wn.links.new(bg.outputs[0], wo.inputs[0])
 
 # ================================================================== EXTERIOR
+# HUQUQ MAKTABI occupies 12 m of the ground floor of a 75 m long, 3-storey building:
+#   x -10..-5  residential stair entrance (5 m)   | x -5..0  VINO VODKA shop (5 m)
+#   x  0..12   HUQUQ MAKTABI (12 m)                | x 12..62 services (50 m) | x 62..65 building end (3 m)
+BX0, BX1, BD = -10.0, 65.0, 12.0          # building extents and depth
+GF = 3.9; FLH = 3.2; ROOF = GF + 2 * FLH  # ground floor 3.9, two upper floors of 3.2 -> 10.3
 ex_b = Builder("Exterior_Ground", C_EXT)
-ex_b.box(-30, -30, -0.06, 45, 40, -0.05, M_GRASS)
-ex_b.box(-4, -6.5, -0.05, 16, 0.0, 0.0, M_PAVER)
-ex_b.box(-4, 0.0, -0.05, 0.0, 7.5, 0.0, M_PAVER); ex_b.box(12.0, 0.0, -0.05, 16, 7.5, 0.0, M_PAVER)        # plaza / sidewalk
-ex_b.box(-30, -6.75, -0.05, 45, -6.5, 0.12, M_CURB)             # curb
-ex_b.box(-30, -14.5, -0.08, 45, -6.75, -0.04, M_ASPHALT)        # road
-for k in range(-10, 16):
+ex_b.box(-45, -30, -0.06, 95, 40, -0.05, M_GRASS)
+ex_b.box(-20, -6.5, -0.05, 75, 0.0, 0.0, M_PAVER)              # sidewalk along the whole building
+ex_b.box(-45, -6.75, -0.05, 95, -6.5, 0.12, M_CURB)
+ex_b.box(-45, -14.5, -0.08, 95, -6.75, -0.04, M_ASPHALT)
+for k in range(-15, 32):
     ex_b.box(k * 3.0, -10.68, -0.04, k * 3.0 + 1.6, -10.57, -0.038, M_ROADLINE)
-ex_b.box(-30, -16.5, -0.05, 45, -14.5, 0.0, M_PAVER)            # far sidewalk
+ex_b.box(-45, -16.5, -0.05, 95, -14.5, 0.0, M_PAVER)
 ex_b.build()
-# entrance portal (oak-clad canopy + fins) and sign
-po = Builder("Entrance_Portal", C_EXT)
-po.box(3.80, -1.0, 0, 4.0, 0.0, TOP, M_OAK_Z)
-po.box(8.0, -1.0, 0, 8.20, 0.0, TOP, M_OAK_Z)
-po.box(3.80, -1.0, 3.30, 8.20, 0.0, TOP, M_OAK_X)
-po.box(3.80, -1.02, 3.30, 8.20, -1.0, TOP, M_GRAPHITE)        # sign band
-po.build(bevel=0.006)
-text_obj("Exterior_Sign", C_EXT, "HUQUQ MAKTABI", FONT_XB, 0.30, M_LOGO, (6.0, -1.035, 3.58), (math.radians(90), 0, 0), extrude=0.02)
+
+M_PLASTER_UP = textured("Plaster_UpperFloors", srgb("#cdbfa9"), 0.85, 30, 0.05)
+M_STONE_GF = textured("Stone_GroundFloor", srgb("#8d8478"), 0.7, 25, 0.08)
+M_WIN_LIT = emission("Window_Lit_Warm", "#ffcf93", 2.2)
+M_WIN_LIT2 = emission("Window_Lit_Cool", "#dfe8ff", 1.4)
+M_SHOP_CEIL = emission("Shop_Ceiling_Light", "#fff1dc", 2.0)
+rb = random.Random(5)
+# ---- building mass behind the ground-floor premises and the two upper floors
+bm = Builder("Building_75m_Mass", C_EXT)
+bm.box(BX0, 6.0, 0, BX1, BD, GF, M_STONE_GF)                   # rear part of ground floor (closed)
+bm.box(BX0, 0, GF, BX1, BD, ROOF, M_PLASTER_UP)                 # upper floors
+bm.box(BX0 - 0.05, -0.08, GF - 0.02, BX1 + 0.05, 0.0, GF + 0.18, M_CURB)       # floor band over ground floor
+bm.box(BX0 - 0.05, -0.08, GF + FLH - 0.05, BX1 + 0.05, 0.0, GF + FLH + 0.05, M_CURB)
+bm.box(BX0 - 0.1, -0.12, ROOF, BX1 + 0.1, BD + 0.1, ROOF + 0.6, M_CURB)        # parapet
+for z0 in (GF + 0.9, GF + FLH + 0.85):                           # upper-floor windows (front)
+    xx = BX0 + 1.0
+    while xx < BX1 - 1.6:
+        m = M_BG_WIN; r_ = rb.random()
+        if r_ < 0.38: m = M_WIN_LIT
+        elif r_ < 0.46: m = M_WIN_LIT2
+        bm.box(xx, -0.03, z0, xx + 1.5, 0.0, z0 + 1.55, m)
+        bm.box(xx - 0.05, -0.07, z0 - 0.05, xx + 1.55, -0.02, z0, M_WHITE_MET)            # sill
+        bm.box(xx, -0.05, z0 + 1.5, xx + 1.5, -0.03, z0 + 1.55, M_WHITE_MET)
+        bm.box(xx + 0.72, -0.05, z0, xx + 0.78, -0.03, z0 + 1.55, M_WHITE_MET)            # mullion
+        if rb.random() < 0.2:                                                             # AC unit
+            bm.box(xx + 1.7, -0.32, z0 + 0.1, xx + 2.4, -0.02, z0 + 0.62, M_WHITE_GLOSS)
+        xx += 3.0
+for x_end in (BX0, BX1):                                         # end facades (plain)
+    pass
+bm.build(bevel=0.003)
+
+# ---- ground-floor shop units (real shallow interiors behind glass so reflections / depth read correctly)
+def shop(x0, x1, name, fascia_hex, text_hex="#ffffff", depth=5.0, door_at=0.3):
+    b = Builder(f"Shop_{name.replace(' ', '_')}", C_EXT)
+    fas = principled(f"Fascia_{name}", srgb(fascia_hex), 0.45, coat=0.3)
+    b.box(x0, 0, 0, x0 + 0.3, 0.3, GF, M_STONE_GF); b.box(x1 - 0.3, 0, 0, x1, 0.3, GF, M_STONE_GF)
+    b.box(x0 + 0.3, -0.06, 3.0, x1 - 0.3, 0.3, GF, fas)                                  # fascia
+    b.box(x0 + 0.3, 0, 0, x1 - 0.3, 0.3, 0.1, M_STONE_GF)                                # plinth
+    b.box(x0 + 0.3, 0.3, -0.01, x1 - 0.3, depth, 0.0, M_FLOOR_ADMIN)                    # interior floor
+    b.box(x0 + 0.3, depth, 0, x1 - 0.3, depth + 0.1, 3.0, M_WALL)                       # back wall
+    b.box(x0 + 0.3, 0.3, 0, x0 + 0.35, depth, 3.0, M_WALL); b.box(x1 - 0.35, 0.3, 0, x1 - 0.3, depth, 3.0, M_WALL)
+    b.box(x0 + 0.3, 0.3, 3.0, x1 - 0.3, depth, 3.05, M_CEIL)
+    b.box(x0 + 0.8, 1.2, 2.98, x1 - 0.8, 1.3, 3.0, M_SHOP_CEIL); b.box(x0 + 0.8, 3.2, 2.98, x1 - 0.8, 3.3, 3.0, M_SHOP_CEIL)
+    # frames + mullions, glass
+    xs_ = [x0 + 0.3]
+    w = x1 - x0 - 0.6; n = max(2, int(round(w / 2.0)))
+    xs_ += [x0 + 0.3 + w * k / n for k in range(1, n)] + [x1 - 0.3]
+    for xm in xs_: b.box(xm - 0.03, 0.08, 0.1, xm + 0.03, 0.16, 3.0, M_BLACK_AL)
+    b.box(x0 + 0.3, 0.08, 2.95, x1 - 0.3, 0.16, 3.0, M_BLACK_AL); b.box(x0 + 0.3, 0.08, 0.1, x1 - 0.3, 0.16, 0.15, M_BLACK_AL)
+    dx = x0 + 0.3 + w * door_at
+    b.box(dx - 0.03, 0.08, 2.2, dx + 1.03, 0.16, 2.25, M_BLACK_AL)
+    # simple shelving / counters inside for depth
+    rr = random.Random(hash(name) & 0xffff)
+    for k in range(int(w // 1.6)):
+        sx = x0 + 0.6 + k * 1.6
+        if abs(sx + 0.6 - (dx + 0.5)) < 1.0: continue
+        b.box(sx, depth - 0.45, 0, sx + 1.2, depth - 0.05, rr.uniform(1.6, 2.2), rr.choice([M_OAK_X, M_WHITE_MET, M_GRAPHITE]))
+    b.box(x0 + 0.6, 2.0, 0, x0 + 0.6 + min(2.4, w * 0.4), 2.6, 0.95, M_WHITE_GLOSS)
+    b.build(bevel=0.002)
+    g = Builder(f"ShopGlass_{name.replace(' ', '_')}", C_EXT); g.box(x0 + 0.3, 0.115, 0.15, x1 - 0.3, 0.125, 2.95, M_GLASS); g.build()
+    text_obj(f"Sign_{name}", C_EXT, name, FONT_XB, 0.36 if len(name) < 14 else 0.3, emission(f"SignLight_{name}", text_hex, 5),
+             ((x0 + x1) / 2, -0.075, 3.45), (math.radians(90), 0, 0), extrude=0.03)
+    area(f"ShopLight_{name}", ((x0 + x1) / 2, depth / 2, 2.95), (w * 0.8, depth * 0.6), 5 * w, (1, 0.93, 0.82))
+
+shop(-5.0, 0.0, "VINO VODKA", "#4a1420", "#ffe6c4", door_at=0.55)
+units = [(12, 18, "APTEKA", "#0f6b45"), (18, 26, "OZIQ-OVQAT", "#1c3f7a"), (26, 32, "KAFE", "#6b3a1c"),
+         (32, 42, "SARTAROSHXONA", "#2b2b2b"), (42, 50, "NOTARIUS", "#1d2a44"), (50, 62, "MAISHIY XIZMATLAR", "#5a5f66")]
+for (a_, b_, n_, c_) in units: shop(a_, b_, n_, c_)
+# residential stair entrance (x -10..-5) and building end (x 62..65)
+st = Builder("Stair_Entrance", C_EXT)
+st.box(BX0, 0, 0, -5.0, 6.0, GF, M_STONE_GF)
+st.box(-8.2, -0.02, 0, -6.8, 0.02, 2.3, M_GRAPHITE); st.box(-8.3, -0.04, 2.3, -6.7, 0.0, 2.4, M_BLACK_AL)
+st.box(-8.6, -1.1, 2.6, -6.4, 0.0, 2.72, M_GRAPHITE)
+st.box(-9.6, -0.03, 1.0, -8.9, 0.0, 2.2, M_BG_WIN); st.box(-6.1, -0.03, 1.0, -5.4, 0.0, 2.2, M_WIN_LIT)
+st.box(BX1 - 3.0, 0, 0, BX1, 6.0, GF, M_STONE_GF); st.box(63.0, -0.03, 1.0, 64.2, 0.0, 2.4, M_BG_WIN)
+st.build(bevel=0.003)
+text_obj("Stair_No", C_EXT, "1-YO'LAK", FONT_SB, 0.12, M_WHITE_MET, (-7.5, -0.03, 2.5), (math.radians(90), 0, 0), extrude=0.005)
+area("Stair_Lamp", (-7.5, -0.6, 2.58), (0.2, 0.2), 30, (1, 0.85, 0.65), spread=90)
+
+# ---- HUQUQ MAKTABI canopy (naves) across the 12 m frontage; illuminated letters built onto the canopy
+po = Builder("HuquqMaktabi_Canopy", C_EXT)
+po.box(0.05, -1.5, 3.30, 11.95, 0.0, 3.50, M_GRAPHITE)                  # canopy slab
+po.box(0.05, -1.5, 3.29, 11.95, 0.0, 3.30, M_OAK_X)                     # oak soffit
+po.box(0.05, -1.52, 3.28, 11.95, -1.48, 3.52, M_BLACK_AL)               # front edge trim
+for cx in (0.6, 11.4):                                                  # wall brackets / tie rods
+    po.cyl(0, 0, 0, 1.75, 0.012, M_STEEL, n=8, M=Matrix.Translation((cx, 0.0, 4.6)) @ Matrix.Rotation(math.radians(-130), 4, "X"))
+po.box(3.80, -0.6, 0, 4.0, 0.0, 3.29, M_OAK_Z); po.box(8.0, -0.6, 0, 8.20, 0.0, 3.29, M_OAK_Z)     # oak entrance fins
+po.box(1.4, -1.36, 3.50, 10.6, -1.33, 3.53, M_BLACK_AL)                 # letter mounting rail
+po.build(bevel=0.004)
+text_obj("Canopy_Sign_HUQUQ_MAKTABI", C_EXT, "HUQUQ MAKTABI", FONT_XB, 0.62, M_LOGO, (6.0, -1.345, 3.76), (math.radians(90), 0, 0), extrude=0.06, spacing=1.04)
+fxc = Builder("Canopy_Downlights", C_EXT)
+for cx in (1.2, 2.9, 9.1, 10.8):
+    fxc.cyl(cx, -0.75, 3.279, 3.29, 0.05, M_LED_WARM, n=20)
+    area(f"CanopyDown_{cx}", (cx, -0.75, 3.27), (0.08, 0.08), 18, (1, 0.86, 0.7), spread=70)
+fxc.build()
 # planters by the entrance
 pl = Builder("Planters", C_EXT)
 for cx in (2.9, 9.1):
@@ -775,31 +858,20 @@ pl.build(bevel=0.01)
 for cx in (2.9, 9.1):
     for dx in (-0.35, 0.0, 0.35):
         plant(C_EXT, f"Shrub_{cx}_{dx}", cx + dx, -0.7, pot_h=0.42, pot_r=0.001, height=0.5, leaves=70, mat=M_PLANT_DK)
-# bollard lights along path
 bl = Builder("Bollards", C_EXT)
 for cx in (4.5, 7.5):
     for cy in (-3.0, -5.2):
         bl.cyl(cx, cy, 0, 0.8, 0.06, M_BLACK_AL, n=20); bl.cyl(cx, cy, 0.62, 0.72, 0.061, M_LED_WARM, n=20)
 bl.build()
-# background urban context (soft, far) — residential blocks with some lit windows at dusk
-M_WIN_LIT = emission("Window_Lit_Warm", "#ffcf93", 2.2)
-M_WIN_LIT2 = emission("Window_Lit_Cool", "#dfe8ff", 1.4)
+# distant skyline behind the long building
 bgb = Builder("Background_Buildings", C_EXT)
-rb = random.Random(5)
-for (x0, x1, y0, y1, h) in [(-16, 2, 15, 27, 15.5), (9, 31, 17, 29, 18.6), (-34, -18, 6, 18, 12.4)]:
+for (x0, x1, y0, y1, h) in [(-30, -8, 26, 38, 18.5), (20, 44, 28, 40, 21.6), (-50, -32, 14, 26, 15.5)]:
     bgb.box(x0, y0, 0, x1, y1, h, M_BG_BLDG)
     for fl_ in range(int(h / 3.1)):
-        z = fl_ * 3.1 + 0.9
-        xx = x0 + 0.9
+        z = fl_ * 3.1 + 0.9; xx = x0 + 0.9
         while xx < x1 - 1.6:
-            m = M_BG_WIN
-            rr = rb.random()
-            if rr < 0.33: m = M_WIN_LIT
-            elif rr < 0.4: m = M_WIN_LIT2
-            bgb.box(xx, y0 - 0.03, z, xx + 1.4, y0 + 0.02, z + 1.55, m)
-            bgb.box(xx - 0.06, y0 - 0.12, z - 0.08, xx + 1.46, y0, z - 0.02, M_CURB)
-            xx += 2.4
-    bgb.box(x0 - 0.1, y0 - 0.15, h - 0.3, x1 + 0.1, y1 + 0.1, h, M_CURB)
+            r_ = rb.random(); m = M_WIN_LIT if r_ < 0.33 else (M_WIN_LIT2 if r_ < 0.4 else M_BG_WIN)
+            bgb.box(xx, y0 - 0.03, z, xx + 1.4, y0 + 0.02, z + 1.55, m); xx += 2.4
 bgb.build()
 # trees (deciduous, clumped crowns) behind building and along street
 def tree(name, x, y, h=6.5, r=2.2):
@@ -826,7 +898,7 @@ def tree(name, x, y, h=6.5, r=2.2):
             cr.v += [tuple(M @ Vector(q)) for q in [(-sz, 0, 0), (0, -sz * 0.5, 0.01), (sz, 0, 0), (0, sz * 0.5, 0.01)]]
             cr.f.append((o, o + 1, o + 2, o + 3)); cr.mi.append(idx)
     cr.build()
-for i, (x, y) in enumerate([(-3.8, 9), (2.0, 11.0), (9.8, 10.5), (15.8, 8.5), (-6.5, -4.6), (18.5, -4.2), (-12, 4)]):
+for i, (x, y) in enumerate([(-12.5, -4.4), (-3.0, -4.7), (15.0, -4.5), (27.0, -4.4), (39.0, -4.6), (52.0, -4.4)]):
     tree(f"Tree_{i}", x, y, h=random.uniform(6.5, 8.5), r=random.uniform(2.2, 2.9))
 # facade wall-washers (dusk) on the piers between windows + grazing on portal
 for (cx, tgt) in [(0.35, 0), (2.05, 0), (9.95, 0), (11.65, 0)]:
@@ -837,7 +909,7 @@ for cx in (0.35, 2.05, 9.95, 11.65):
 fxe.build()
 # street lamps
 sl = Builder("Street_Lamps", C_EXT)
-for cx in (-4.0, 16.0):
+for cx in (-9.0, 21.0, 45.0):
     sl.cyl(cx, -6.2, 0, 5.2, 0.07, M_BLACK_AL, r1=0.05, n=16)
     sl.box(cx - 0.05, -6.2, 5.1, cx + 0.05, -5.0, 5.18, M_BLACK_AL)
     sl.box(cx - 0.12, -5.25, 5.05, cx + 0.12, -4.75, 5.1, M_BLACK_AL); sl.box(cx - 0.1, -5.23, 5.045, cx + 0.1, -4.77, 5.05, M_LED_WARM)
@@ -880,14 +952,14 @@ def make_cam(name, lens, keys_pos, keys_tgt, fstop=8.0, focus_dist=None):
 E = 1.58  # eye height
 # A — exterior establishing (6 s): sweeping arc from street towards the facade
 camA = make_cam("CAM_A_Exterior", 28,
-                [(1, (-5.5, -15.5, 1.9)), (144, (1.8, -11.0, 1.7))],
-                [(1, (5.0, 0.0, 2.0)), (144, (6.0, 0.0, 1.9))], fstop=11)
+                [(1, (-7.5, -16.5, 2.2)), (144, (1.5, -11.5, 1.8))],
+                [(1, (3.0, 0.0, 4.2)), (144, (6.0, 0.0, 2.3))], fstop=11)
 # B — one continuous take: approach, door opens, enter, coworking reveal, pans, admin wall, details, law class
 P = [
     (145, (6.0, -7.0, E)), (230, (6.0, -2.2, E)), (300, (6.0, -0.2, E)), (360, (6.0, 1.0, E)),       # approach, door opens, enter
     (552, (6.0, 1.3, E)),                                                                              # reveal + pan left/right
     (690, (6.0, 2.85, 1.62)),                                                                          # glide toward admin desk
-    (760, (7.05, 3.2, 1.5)), (850, (5.3, 3.25, 1.5)),                                                  # cooler/plants -> TV
+    (760, (6.7, 3.4, 1.5)), (850, (5.35, 3.4, 1.5)),                                                  # cooler/plants -> TV
     (900, (5.6, 2.0, 1.55)), (950, (4.6, 0.85, 1.55)), (995, (3.35, 0.75, 1.6)), (1056, (2.9, 0.7, 1.65)),  # into Law & History
 ]
 TG = [
@@ -904,8 +976,8 @@ camC = make_cam("CAM_C_Languages", 22,
                 [(1057, (9.6, 5.8, 1.4)), (1140, (10.4, 5.8, 1.4)), (1224, (11.8, 3.2, 1.55))], fstop=8)
 # D — final cinematic wide (crane up & pull back)
 camD = make_cam("CAM_D_FinalWide", 26,
-                [(1225, (6.0, -5.5, 1.5)), (1392, (3.6, -13.5, 3.6))],
-                [(1225, (6.0, 0.0, 2.1)), (1392, (6.0, 0.0, 1.9))], fstop=11)
+                [(1225, (6.0, -5.5, 1.5)), (1392, (1.0, -19.5, 4.6))],
+                [(1225, (6.0, 0.0, 2.3)), (1392, (8.0, 0.0, 4.2))], fstop=11)
 for cam, (s, e) in zip((camA, camB, camC, camD), SHOTS.values()):
     m = scene.timeline_markers.new(cam.name, frame=s); m.camera = cam
 scene.camera = camA

@@ -2,6 +2,11 @@
 
 Photorealistic architectural walkthrough of the HUQUQ MAKTABI training centre.
 
+**Context:** HUQUQ MAKTABI occupies 12 m of the **ground floor of a 75 m long, 3-storey building**. Its left neighbour is
+a 5 m **VINO VODKA** shop, then a 5 m residential stair entrance; to its right are **50 m of services** (apteka, market, kafe, sartaroshxona,
+notarius, maishiy xizmatlar), then a 3 m building end. The illuminated **HUQUQ MAKTABI** letters are mounted on a canopy (naves)
+spanning the school's 12 m frontage.
+
 **Footprint 12.0 × 6.0 m = 72 m² gross**, with 200 mm external walls and 100 mm partitions; the clear interior is 11.6 × 5.6 m.
 The **main entrance is a glass door at the exact centre of the 12 m front facade** (x = 6 000 mm).
 Standing outside and looking through the entrance:
@@ -9,12 +14,12 @@ Standing outside and looking through the entrance:
 | Position | Zone | Clear size | Content |
 |---|------|-----|---------|
 | **LEFT** | **Law & History classroom** | 3.70 × 5.60 m (20.7 m²) | 12 seats in light-oak desks (3 rows × 2 desks × 2), upholstered chairs, whiteboard on a navy accent wall, wall-mounted TV, 2 framed legal/history prints, teacher desk |
-| **CENTRE** | **Administration + Coworking**, one combined space | 4.00 × 5.60 m (22.4 m²) | glass partition with a separate central glass door, entry vestibule, coworking counters LEFT and RIGHT (2 seats each), coworking table directly ahead (3 seats facing the feature wall), administrator desk at the back |
+| **CENTRE** | **Administration + Coworking**, one combined space | 4.00 × 5.60 m (22.4 m²) | glass partition with a separate central glass door, entry vestibule, coworking ONLY on the LEFT and RIGHT sides (counters with 3 seats each), the centre kept open so nothing blocks the administrator desk at the back |
 | **RIGHT** | **Foreign Languages classroom** | 3.70 × 5.60 m (20.7 m²) | same furniture, whiteboard on a teal accent wall, TV, 2 framed international-education prints |
 
 There are only two classrooms. Room widths are derived from furniture and circulation, not from equal thirds:
 
-* **Admin:** 0.6 m counters each side, a 1.6 m central aisle from the door, and 1.2 m corridors each side of the coworking table leading to the administrator desk, water cooler and TV.
+* **Admin:** 0.6 m counters each side, a 1.6 m central aisle from the door, and an open centre leading straight to the administrator desk, water cooler and TV.
 * **Classrooms:** students face the board along the 5.6 m axis. There is 1.35 m between the board and the first desk, an 0.8 m aisle, a 1.2 m row pitch and an 0.8 m rear circulation zone. Each classroom door (1 000 mm, in the partition next to the vestibule) opens into that rear zone.
 
 **Signature wall** (behind the administrator): navy acoustic slats on a graphite felt backing,
@@ -36,7 +41,7 @@ motion-graphics loop, two white planters, a water cooler and a fluted-oak recept
 
 ## Film sequence
 
-1. Exterior establishing shot at dusk (street → facade, illuminated sign)
+1. Exterior establishing shot at dusk: the 3-storey building, its neighbours, and the canopy with the illuminated HUQUQ MAKTABI letters
 2. Camera approaches the glass administration entrance; the glass door swings open
 3. Camera enters; coworking is revealed directly ahead
 4. Smooth pan left and right across the coworking counters

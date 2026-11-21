@@ -17,7 +17,7 @@ CDY = (0.35, 1.35); WINDOWS = [(0.70, 2.00), (2.10, 3.40), (8.60, 9.90), (10.00,
 ROWS_Y0 = (3.95, 2.75, 1.55); COLS = ((0.45, 1.65), (2.45, 3.65)); DESK_D = 0.5
 
 fig, ax = plt.subplots(figsize=(16.5, 11.7))
-ax.set_aspect("equal"); ax.axis("off"); ax.set_xlim(-1.7, 13.7); ax.set_ylim(-3.7, 8.5)
+ax.set_aspect("equal"); ax.axis("off"); ax.set_xlim(-1.7, 13.7); ax.set_ylim(-7.7, 8.5)
 WALL = "#1d1f24"; OAK = "#e6d3b3"; FURN = "#8a7a64"; GLASS = "#3d9ad6"; CIRC = "#1aa36b"
 
 def rect(x0, y0, x1, y1, fc="none", ec=FURN, lw=1, z=2, ls="-"):
@@ -69,11 +69,8 @@ ax.plot([8.14, 8.14], [CDY[1] + 0.02, CDY[1] + 0.98], color=FURN, lw=2.2, zorder
 ax.add_patch(Arc((8.14, CDY[1]), 1.92, 1.92, theta1=270, theta2=360, color=FURN, lw=0.8, ls="--"))
 
 # ---- ZONE 2 admin + coworking
-rect(4.0, 1.5, 4.6, 3.0, fc=OAK); rect(7.4, 1.5, 8.0, 3.0, fc=OAK)
-for y in (1.85, 2.62): chair(4.95, y, -90); chair(7.05, y, 90)
-rect(5.2, 3.35, 6.8, 4.05, fc=OAK)
-for x in (5.55, 6.0, 6.45): chair(x, 3.03, 180)
-rect(5.0, 2.6, 7.0, 4.3, ec="#b0a89a", lw=0.7, z=1, ls=":")
+rect(4.0, 1.5, 4.6, 3.7, fc=OAK); rect(7.4, 1.5, 8.0, 3.7, fc=OAK)
+for y in (1.9, 2.6, 3.3): chair(4.95, y, -90); chair(7.05, y, 90)
 rect(5.13, 4.48, 6.87, 5.2, fc="#f7f7f4", ec="#444", lw=1.2); rect(5.15, 4.515, 6.85, 4.59, fc=OAK, ec=FURN)
 ax.add_patch(Circle((6.0, 5.33), 0.28, fc="#2a2a2a", ec="#2a2a2a", zorder=3))
 rect(4.0, 4.0, 4.42, 5.2, fc=OAK); rect(4.0, 4.0, 4.05, 5.22, fc="#111", ec="#111", z=4)
@@ -81,13 +78,11 @@ for (px, py) in [(4.68, 5.4), (7.38, 5.4)]: ax.add_patch(Circle((px, py), 0.22, 
 rect(7.52, 4.29, 7.84, 4.61, fc="white", ec="#3a6ea5", lw=1.2); ax.add_patch(Circle((7.68, 4.45), 0.12, fc="#bcdcf2", ec="#3a6ea5", zorder=4))
 rect(4.0, 5.675, 8.0, 5.8, fc="#17233a", ec="#17233a", z=5); ax.plot([4.42, 7.58], [5.66, 5.66], color="#9fc2ff", lw=3, zorder=6)
 # circulation
-ax.annotate("", (6.0, 0.35), (6.0, 2.6), arrowprops=dict(arrowstyle="<-", lw=1.3, color=CIRC, ls="--"))
-for sx in (4.6, 7.4):
-    ax.annotate("", (sx, 4.45), (6.0 + (sx - 6.0) * 0.55, 2.75), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--", connectionstyle="arc3,rad=0.15"))
+ax.annotate("", (6.0, 0.35), (6.0, 4.4), arrowprops=dict(arrowstyle="<-", lw=1.4, color=CIRC, ls="--"))
 ax.annotate("", (3.6, 0.85), (5.4, 0.85), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--"))
 ax.annotate("", (8.4, 0.85), (6.6, 0.85), arrowprops=dict(arrowstyle="->", lw=1.0, color=CIRC, ls="--"))
 dim((5.2, 1.6), (6.8, 1.6), "aisle 1 600", 0, fs=7, col=CIRC)
-dim((4.0, 3.7), (5.2, 3.7), "1 200", 0, fs=7, col=CIRC); dim((6.8, 3.7), (8.0, 3.7), "1 200", 0, fs=7, col=CIRC)
+lab_ = ax.text(6.0, 3.0, "open centre —\nclear view & access\nto administrator", ha="center", va="center", fontsize=7, color=CIRC, zorder=9)
 
 # ---- classrooms
 def classroom(mirror):
@@ -118,7 +113,7 @@ lab(6.0, 6.75, "CENTRE — ZONE 2\nADMINISTRATION + COWORKING\n(one combined spa
 lab(9.95, 6.5, "RIGHT — ZONE 3\nXORIJIY TILLAR (Foreign Languages)", 9.5)
 lab(6.0, 6.12, "illuminated signature wall", 7, "normal", "#17233a")
 lab(2.05, 5.95, "whiteboard (navy accent wall)", 6.5, "normal"); lab(9.95, 5.95, "whiteboard (teal accent wall)", 6.5, "normal")
-lab(6.0, 3.7, "COWORKING\ntable", 7, "normal"); lab(4.3, 2.25, "cowork\ncounter", 6.5, "normal", rotation=90); lab(7.7, 2.25, "cowork\ncounter", 6.5, "normal", rotation=90)
+lab(4.3, 2.6, "COWORKING (left)", 6.5, "normal", rotation=90); lab(7.7, 2.6, "COWORKING (right)", 6.5, "normal", rotation=90)
 lab(6.0, 4.84, "ADMINISTRATOR DESK", 6.5); lab(7.68, 4.05, "water cooler", 6, "normal"); lab(4.55, 4.6, "TV +\ncredenza", 6, "normal")
 lab(6.0, 1.15, "entry\nvestibule", 6.5, "normal", "#555")
 for (x, t) in [(0.45, "TV"), (12 - 0.45, "TV")]: lab(x, 4.6, t, 6.5, "normal", rotation=90)
@@ -136,14 +131,26 @@ dim((12, IY0), (12, CDY[0]), "", 0.35, horiz=False); dim((12, CDY[0]), (12, CDY[
 dim((12, CDY[1]), (12, IY1), "4 450", 0.35, horiz=False, fs=7)
 
 ax.annotate("N", xy=(13.2, 7.6), xytext=(13.2, 6.9), ha="center", fontsize=12, fontweight="bold", arrowprops=dict(arrowstyle="-|>", lw=1.5, color="#111"))
-for i in range(5): rect(8.9 + i, -3.5, 9.9 + i, -3.4, fc="#111" if i % 2 == 0 else "white", ec="#111", lw=0.6, z=8)
-ax.text(8.9, -3.3, "0", fontsize=7); ax.text(13.9, -3.3, "5 m", fontsize=7, ha="right")
+for i in range(5): rect(8.9 + i, -4.35, 9.9 + i, -4.25, fc="#111" if i % 2 == 0 else "white", ec="#111", lw=0.6, z=8)
+ax.text(8.9, -4.15, "0", fontsize=7); ax.text(13.9, -4.15, "5 m", fontsize=7, ha="right")
 ax.text(-1.6, 8.3, "HUQUQ MAKTABI — Floor Plan", fontsize=18, fontweight="bold")
 ax.text(-1.6, 7.92, "Footprint 12.0 × 6.0 m = 72 m² gross · external walls 200 · partitions 100 · ceiling 3 200 · dims in mm", fontsize=9.5, color="#444")
 ax.text(-1.6, -3.0, "Net areas: Law & History 3.70×5.60 = 20.7 m²  ·  Admin + Coworking 4.00×5.60 = 22.4 m²  ·  Foreign Languages 20.7 m²", fontsize=8.5, color="#444")
-ax.text(-1.6, -3.35, "Seats: 12 + 12 students, 2 teachers · 4 counter + 3 table coworking seats · administrator  ·  green = circulation", fontsize=8.5, color="#444")
+ax.text(-1.6, -3.35, "Seats: 12 + 12 students, 2 teachers · 6 coworking seats (3 left + 3 right) · administrator  ·  green = circulation", fontsize=8.5, color="#444")
 ax.text(-1.6, -0.6, "STREET ↓  (viewer outside\nfacing the entrance)", fontsize=8, color="#666")
 
+# key plan: ground floor of the 75 m, 3-storey building (scale 1:4 of the main plan)
+K = 0.16; KX, KY = -1.0, -7.1
+def krect(x0, x1, fc, t, tc="white"):
+    ax.add_patch(Rectangle((KX + (x0 + 10) * K, KY), (x1 - x0) * K, 12 * K, fc=fc, ec="#222", lw=0.7, zorder=7))
+    ax.text(KX + ((x0 + x1) / 2 + 10) * K, KY + 6 * K, t, ha="center", va="center", fontsize=6.3, color=tc, zorder=8, rotation=0 if (x1 - x0) > 8 else 90)
+krect(-10, -5, "#8d8478", "stair\n5 m"); krect(-5, 0, "#4a1420", "VINO\nVODKA\n5 m")
+krect(0, 12, "#17233a", "HUQUQ MAKTABI 12 m")
+krect(12, 62, "#6f757c", "SERVICES 50 m (apteka, market, kafe, sartaroshxona, notarius, maishiy xizmatlar)")
+krect(62, 65, "#8d8478", "3 m")
+ax.add_patch(Rectangle((KX, KY - 0.18), 75 * K, 0.1, fc="#d9d3c8", ec="none", zorder=6))
+ax.text(KX, KY + 12 * K + 0.15, "KEY PLAN — ground floor of the 75 m long, 3-storey building (floors 2–3 above); HUQUQ MAKTABI canopy sign over its 12 m frontage", fontsize=8, color="#333")
+ax.text(KX + 75 * K / 2, KY - 0.35, "street", ha="center", fontsize=7, color="#666")
 fig.savefig(os.path.join(OUT, "floor_plan.png"), dpi=200, bbox_inches="tight", facecolor="white")
 fig.savefig(os.path.join(OUT, "floor_plan.pdf"), bbox_inches="tight", facecolor="white")
 print("floor plan saved")
