@@ -34,7 +34,7 @@ motion-graphics loop, two white planters, a water cooler and a fluted-oak recept
 |------|------|
 | `video/HUQUQ_MAKTABI_walkthrough_1080p.mp4` | **Final film**, 1920×1080, H.264, 24 fps, ~55 s |
 | `blender/huquq_maktabi.blend` | Editable Blender 5.2 project (collections per zone, cameras, lights, materials) |
-| `renders/stills/*.png` | High-resolution interior/exterior stills (2560×1440) |
+| `renders/stills/01…07_*.png` | High-resolution stills (2560×1440): exterior at dusk, glass entrance, coworking + admin, signature wall, Law & History, Foreign Languages, building context |
 | `docs/floor_plan.png` / `.pdf` | Dimensioned floor plan (mm), A3 |
 | `renders/stills/00_topdown_plan.png` | Photoreal top-down plan render of the 3D model (ceiling cut away) |
 | `scripts/` | Fully procedural pipeline (see below) |
@@ -59,7 +59,8 @@ Shots 2–7 are a single continuous camera take.
   real refraction and reflection on glass, Nishita-type multiple-scattering sky and sun, area lights)
 * OpenImageDenoise (albedo + normal), AgX view transform (Medium High Contrast)
 * Path-traced natively at 1920×1080 on every second frame of the 24 fps timeline (CPU only), then
-  motion-compensated interpolation to 24 fps with ffmpeg `minterpolate`, cross-dissolves, H.264 encode
+  motion-compensated interpolation to 24 fps with ffmpeg `minterpolate`. The fast camera moves (timeline frames 700–970)
+  were also rendered on the even frames, so they play at native 24 fps with no interpolation. Cross-dissolves, H.264 encode
 
 ```bash
 python -m venv /opt/bvenv && /opt/bvenv/bin/pip install bpy==5.2.4 pillow matplotlib

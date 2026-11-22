@@ -15,6 +15,7 @@ FONT = "/usr/share/fonts/opentype/inter/Inter-ExtraBold.otf"
 FONT2 = "/usr/share/fonts/opentype/inter/Inter-Medium.otf"
 SHOTS = [("A", 1, 143), ("B", 145, 1055), ("C", 1057, 1223), ("D", 1225, 1391)]
 XF = [0.8, 1.0, 1.2]          # dissolve lengths between consecutive shots (s)
+NATIVE = {"B": (700, 970)}    # timeline range also rendered on even frames (fast pans) -> native 24 fps
 
 def run(cmd):
     print(" ".join(cmd)[:220], flush=True); subprocess.run(cmd, check=True)
@@ -33,6 +34,24 @@ for name, a, b in SHOTS:
         run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "12", "-i", os.path.join(seq, "%05d.png"),
              "-vf", "minterpolate=fps=24:mi_mode=mci:mc_mode=aobmc:me_mode=bidir:vsbmc=1,format=yuv420p",
              "-c:v", "libx264", "-crf", "12", "-preset", "medium", out])
+    # fast camera moves: replace interpolated frames with real path-traced 24 fps frames
+    if name in NATIVE and not os.path.exists(out + ".native"):
+        n0, n1 = NATIVE[name]
+        dec = os.path.join(WORK, f"{name}_dec"); fin = os.path.join(WORK, f"{name}_fin")
+        os.makedirs(dec, exist_ok=True); os.makedirs(fin, exist_ok=True)
+        run(["ffmpeg", "-y", "-loglevel", "error", "-i", out, os.path.join(dec, "%05d.png")])
+        decoded = sorted(os.listdir(dec)); used = 0
+        for j, fn in enumerate(decoded):
+            f = a + j; real = os.path.join(FR, f"f{f:04d}.png")
+            src = real if (n0 <= f <= n1 and os.path.exists(real)) else os.path.join(dec, fn)
+            used += src == real
+            dst = os.path.join(fin, f"{j:05d}.png")
+            if os.path.lexists(dst): os.remove(dst)
+            os.symlink(src, dst)
+        run(["ffmpeg", "-y", "-loglevel", "error", "-framerate", "24", "-i", os.path.join(fin, "%05d.png"),
+             "-vf", "format=yuv420p", "-c:v", "libx264", "-crf", "12", "-preset", "medium", out + ".tmp.mp4"])
+        os.replace(out + ".tmp.mp4", out); open(out + ".native", "w").write(str(used))
+        print(f"shot {name}: {used} native 24 fps frames patched in", flush=True)
     durs.append(len(frames) / 12.0)
 
 # cross-dissolves + fades + end title
